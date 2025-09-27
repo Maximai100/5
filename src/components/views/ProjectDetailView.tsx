@@ -463,7 +463,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                                     <IconDownload />
                                 </button>
                             )}
-                            <button className="add-in-header-btn" onClick={(e) => {e.preventDefault(); onOpenWorkStageModal(null);}}><IconPlus/></button>
+                            <button className="add-in-header-btn" onClick={(e) => {e.preventDefault(); startTransition(() => onOpenWorkStageModal(null));}}><IconPlus/></button>
                         </div>
                     </div>
                     <div className="project-section-body">
@@ -504,7 +504,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                             <div className="empty-state-container">
                                 <IconCalendar />
                                 <p>Этапы работ не добавлены.</p>
-                                <button onClick={(e) => {e.preventDefault(); onOpenWorkStageModal(null);}} className="btn btn-primary">+ Добавить этап</button>
+                                <button onClick={(e) => {e.preventDefault(); startTransition(() => onOpenWorkStageModal(null));}} className="btn btn-primary">+ Добавить этап</button>
                             </div>
                         )}
                     </div>
@@ -513,7 +513,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                     <div className="project-section-header collapsible-header" onClick={() => setIsFinancesCollapsed(!isFinancesCollapsed)}>
                         <h3>Финансы ({projectFinances.length})</h3>
                         <div className="header-actions">
-                            <button className="add-in-header-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onOpenFinanceModal(); }}><IconPlus/></button>
+                            <button className="add-in-header-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); startTransition(() => onOpenFinanceModal()); }}><IconPlus/></button>
                             {isFinancesCollapsed ? <IconChevronRight /> : <IconChevronDown />}
                         </div>
                     </div>
@@ -562,7 +562,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                             <div className="empty-state-container">
                                 <IconCreditCard />
                                 <p>Транзакций пока нет.</p>
-                                <button onClick={(e) => { e.preventDefault(); onOpenFinanceModal(); }} className="btn btn-primary">+ Добавить транзакцию</button>
+                                <button onClick={(e) => { e.preventDefault(); startTransition(() => onOpenFinanceModal()); }} className="btn btn-primary">+ Добавить транзакцию</button>
                             </div>
                         )}
                     </div>
@@ -570,7 +570,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                 <div className="card project-section">
                     <div className="project-section-header">
                         <h3>Документы ({projectDocuments.length})</h3>
-                        <button className="add-in-header-btn" onClick={(e) => {e.preventDefault(); onOpenDocumentModal();}}><IconPlus/></button>
+                        <button className="add-in-header-btn" onClick={(e) => {e.preventDefault(); startTransition(() => onOpenDocumentModal());}}><IconPlus/></button>
                     </div>
                     <div className="project-section-body">
                         {projectDocuments.length > 0 ? (
@@ -602,7 +602,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                             <div className="empty-state-container">
                                 <IconPaperclip />
                                 <p>Документов пока нет.</p>
-                                <button onClick={(e) => {e.preventDefault(); onOpenDocumentModal();}} className="btn btn-primary">+ Загрузить документ</button>
+                                <button onClick={(e) => {e.preventDefault(); startTransition(() => onOpenDocumentModal());}} className="btn btn-primary">+ Загрузить документ</button>
                             </div>
                         )}
                     </div>

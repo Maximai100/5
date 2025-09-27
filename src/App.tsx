@@ -1344,13 +1344,13 @@ const App: React.FC = () => {
                         handleLoadEstimate={handleLoadEstimate}
                         handleAddNewEstimateForProject={() => handleAddNewEstimateInProject(activeProject.id)}
                         handleDeleteProjectEstimate={handleDeleteEstimate}
-                        onOpenFinanceModal={() => appState.openModal('financeEntry')}
+                        onOpenFinanceModal={() => startTransition(() => appState.openModal('financeEntry'))}
                         onDeleteFinanceEntry={handleDeleteFinanceEntry}
                         onOpenPhotoReportModal={() => startTransition(() => appState.openModal('photoReport'))}
                         onViewPhoto={handleViewPhoto}
-                        onOpenDocumentModal={() => appState.openModal('documentUpload')}
+                        onOpenDocumentModal={() => startTransition(() => appState.openModal('documentUpload'))}
                         onDeleteDocument={handleDeleteDocument}
-                        onOpenWorkStageModal={(stage) => appState.openModal('workStage', stage)}
+                        onOpenWorkStageModal={(stage) => startTransition(() => appState.openModal('workStage', stage))}
                         onDeleteWorkStage={handleDeleteWorkStage}
                         onOpenNoteModal={(note) => appState.openModal('note', note)}
                         onDeleteNote={handleDeleteNote}
