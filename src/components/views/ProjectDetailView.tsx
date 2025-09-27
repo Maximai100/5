@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState, useEffect } from 'react';
+import React, { useMemo, useCallback, useState, useEffect, startTransition } from 'react';
 import { ProjectDetailViewProps, Estimate, PhotoReport, Document, WorkStage, Note, ProjectFinancials, FinanceEntry, Task } from '../../types';
 import { IconChevronRight, IconEdit, IconTrash, IconDocument, IconPlus, IconCreditCard, IconCalendar, IconPaperclip, IconDownload, IconMessageSquare, IconTrendingUp, IconCamera, IconChevronDown, IconFolder, IconClose, IconExternalLink } from '../common/Icon';
 import { ListItem } from '../ui/ListItem';
@@ -635,7 +635,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                 <div className="card project-section">
                     <div className="project-section-header">
                         <h3>Фотоотчеты ({projectPhotos.length})</h3>
-                        <button className="add-in-header-btn" onClick={(e) => {e.preventDefault(); onOpenPhotoReportModal();}}><IconPlus/></button>
+                        <button className="add-in-header-btn" onClick={(e) => {e.preventDefault(); startTransition(() => onOpenPhotoReportModal());}}><IconPlus/></button>
                     </div>
                     <div className="project-section-body">
                         {projectPhotos.length > 0 ? (
@@ -667,7 +667,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                             <div className="empty-state-container">
                                 <IconCamera />
                                 <p>Фотографий пока нет.</p>
-                                <button onClick={(e) => {e.preventDefault(); onOpenPhotoReportModal();}} className="btn btn-primary">+ Добавить фото</button>
+                                <button onClick={(e) => {e.preventDefault(); startTransition(() => onOpenPhotoReportModal());}} className="btn btn-primary">+ Добавить фото</button>
                             </div>
                         )}
                     </div>

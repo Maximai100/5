@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef, startTransition } from 'react';
 
 import { GoogleGenAI } from '@google/genai';
 import { 
@@ -901,20 +901,22 @@ const App: React.FC = () => {
         }>;
         date: string;
     }) => {
-        if (appState.activeProjectId) {
-            // Создаем объект PhotoReport в старом формате для совместимости
-            const reportData: PhotoReport = {
-                id: photoReport.id,
-                projectId: appState.activeProjectId,
-                title: photoReport.title,
-                photos: photoReport.photos,
-                date: photoReport.date,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-            };
-            projectsHook.addPhotoReport(appState.activeProjectId, reportData);
-        }
-        appState.closeModal('photoReport');
+        startTransition(() => {
+            if (appState.activeProjectId) {
+                // Создаем объект PhotoReport в старом формате для совместимости
+                const reportData: PhotoReport = {
+                    id: photoReport.id,
+                    projectId: appState.activeProjectId,
+                    title: photoReport.title,
+                    photos: photoReport.photos,
+                    date: photoReport.date,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                projectsHook.addPhotoReport(appState.activeProjectId, reportData);
+            }
+            appState.closeModal('photoReport');
+        });
     }, [projectsHook, appState]);
 
     const handleViewPhoto = useCallback((photo: PhotoReport) => {
@@ -1344,7 +1346,7 @@ const App: React.FC = () => {
                         handleDeleteProjectEstimate={handleDeleteEstimate}
                         onOpenFinanceModal={() => appState.openModal('financeEntry')}
                         onDeleteFinanceEntry={handleDeleteFinanceEntry}
-                        onOpenPhotoReportModal={() => appState.openModal('photoReport')}
+                        onOpenPhotoReportModal={() => startTransition(() => appState.openModal('photoReport'))}
                         onViewPhoto={handleViewPhoto}
                         onOpenDocumentModal={() => appState.openModal('documentUpload')}
                         onDeleteDocument={handleDeleteDocument}
