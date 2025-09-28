@@ -1546,9 +1546,9 @@ const App: React.FC = () => {
             </header>
 
             {/* Main Content */}
-            <main>
+            <div className="app-main">
                 {renderView()}
-            </main>
+            </div>
 
             {/* Bottom Navigation */}
             <nav className="bottom-nav">

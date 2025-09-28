@@ -46,6 +46,8 @@ html {
     overscroll-behavior-x: none; /* Prevents horizontal swipe gesture */
 }
 
+html, body { height: 100%; }
+
 body {
     margin: 0;
     font-family: var(--font-family);
@@ -58,12 +60,11 @@ body {
     /* Layout and positioning */
     position: relative;
     width: 100%;
-    min-height: 100vh;
+    min-height: 100dvh;
     min-height: calc(var(--vh, 1vh) * 100);
     
     /* Scrolling and overflow */
-    overflow-x: hidden;
-    overflow-y: auto;
+    overflow: hidden; /* не скроллим body, скроллим .app-main */
     -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
     
     /* Touch and overscroll behavior */
@@ -78,9 +79,18 @@ body {
 .app-container {
     max-width: 600px;
     margin: 0 auto;
-    padding: 16px;
-    padding-top: calc(80px + env(safe-area-inset-top, 0px));
-    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    padding: 0 16px; /* вертикальные отступы перенесены в .app-main */
+}
+
+/* Прокручиваемая область контента между фиксированными хедером/навигацией */
+.app-main {
+    position: relative;
+    height: calc(100dvh - 64px - 60px);
+    height: calc(100dvh - (64px + env(safe-area-inset-top, 0px)) - (60px + env(safe-area-inset-bottom, 0px)));
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: 16px 0; /* небольшой внутренний отступ */
 }
 
 header {
@@ -939,8 +949,6 @@ body.dark-theme .btn-ai {
     left: 0;
     right: 0;
     width: 100%;
-    max-width: 600px;
-    margin: 0 auto;
     transform: none;
     display: flex;
     justify-content: space-around;
@@ -1621,8 +1629,6 @@ input[type=number] { -moz-appearance: textfield; }
     left: 0;
     right: 0;
     width: 100%;
-    max-width: 600px;
-    margin: 0 auto;
     transform: none;
     display: flex;
     align-items: center;
