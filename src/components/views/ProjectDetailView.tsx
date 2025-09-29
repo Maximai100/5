@@ -66,7 +66,8 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
     onOpenFinanceModal, onDeleteFinanceEntry, onOpenPhotoReportModal, onViewPhoto, onOpenDocumentModal, onDeleteDocument,
     onOpenWorkStageModal, onDeleteWorkStage, onOpenActModal, onNavigateToTasks, onProjectScratchpadChange,
     onExportWorkSchedulePDF, onOpenEstimatesListModal, financials, financeEntries, notesHook, tasksHook, appState, projectDataHook,
-    onExportProjectFinancesPDF
+    onExportProjectFinancesPDF,
+    onUpdatePhotoReport
 }) => {
     // Состояние для выбранной задачи
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -140,15 +141,9 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
     }, []);
 
     const handleSavePhotoReport = useCallback((updatedPhotoReport: PhotoReport) => {
-        // Обновляем фотоотчет в списке
-        const updatedPhotoReports = photoReports.map(pr => 
-            pr.id === updatedPhotoReport.id ? updatedPhotoReport : pr
-        );
-        
-        // Здесь нужно обновить состояние в родительском компоненте
-        // Пока что просто закрываем модальное окно
+        onUpdatePhotoReport?.(updatedPhotoReport.id, updatedPhotoReport);
         setEditingPhotoReport(null);
-    }, [photoReports]);
+    }, [onUpdatePhotoReport]);
 
     const loadProjectData = projectDataHook?.loadProjectData;
 

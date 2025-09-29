@@ -2843,8 +2843,11 @@ input[type=number] { -moz-appearance: textfield; }
 /* Стили для модального окна фотоотчетов */
 .photo-report-modal {
     max-width: 800px;
-    max-height: 90vh;
-    overflow-y: auto;
+    /* Полная высота с учетом мобильного viewport и safe area */
+    max-height: calc(var(--vh, 1vh) * 100 - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 32px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* скролл только в body */
 }
 
 .photos-preview-container {
@@ -2915,6 +2918,24 @@ input[type=number] { -moz-appearance: textfield; }
     font-size: 12px;
     resize: vertical;
     min-height: 40px;
+}
+
+/* Прокрутка только тела модалки фотоотчета; фиксированные шапка/подвал */
+.photo-report-modal .modal-body {
+    overflow-y: auto;
+}
+.photo-report-modal .modal-header {
+    position: sticky;
+    top: 0;
+    background: var(--bg-color);
+    z-index: 1;
+}
+.photo-report-modal .modal-footer {
+    position: sticky;
+    bottom: 0;
+    background: var(--bg-color);
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
 }
 
 /* .photo-item textarea:focus {

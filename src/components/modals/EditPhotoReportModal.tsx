@@ -28,7 +28,6 @@ export const EditPhotoReportModal: React.FC<EditPhotoReportModalProps> = ({
     workStages,
 }) => {
     const [title, setTitle] = useState(photoReport.title);
-    const [tags, setTags] = useState<string[]>(photoReport.tags || []);
     const [stage, setStage] = useState<string>(photoReport.stage || '');
     const [photos, setPhotos] = useState<PhotoItem[]>(() => 
         photoReport.photos.map(photo => ({
@@ -42,6 +41,7 @@ export const EditPhotoReportModal: React.FC<EditPhotoReportModalProps> = ({
     const modalRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { uploadFileWithFallback, updatePhotoReport, deletePhotoFromStorage, isUploading } = useFileStorage();
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         if (modalRef.current) {
@@ -121,13 +121,17 @@ export const EditPhotoReportModal: React.FC<EditPhotoReportModalProps> = ({
     };
 
     const handleSave = async () => {
+        if (saving) return;
+        setSaving(true);
         if (!title.trim()) {
             showAlert('Введите название фотоотчета', 'error');
+            setSaving(false);
             return;
         }
 
         if (photos.length === 0) {
             showAlert('Добавьте хотя бы одну фотографию', 'error');
+            setSaving(false);
             return;
         }
 
@@ -178,6 +182,7 @@ export const EditPhotoReportModal: React.FC<EditPhotoReportModalProps> = ({
                         ? failedUploads[0].reason.message 
                         : 'Ошибка загрузки фотографий';
                     showAlert(errorMessage, 'error');
+                    setSaving(false);
                     return;
                 }
 
@@ -193,7 +198,6 @@ export const EditPhotoReportModal: React.FC<EditPhotoReportModalProps> = ({
             const updatedPhotoReport: PhotoReport = {
                 ...photoReport,
                 title: title.trim(),
-                tags,
                 stage: stage.trim() || undefined,
                 photos: updatedPhotos,
                 updatedAt: new Date().toISOString()
@@ -208,11 +212,13 @@ export const EditPhotoReportModal: React.FC<EditPhotoReportModalProps> = ({
             onSave(updatedPhotoReport);
             showAlert('Фотоотчет успешно обновлен', 'success');
             setUploadProgress(null);
+            setSaving(false);
             onClose();
         } catch (error) {
             console.error('Ошибка при обновлении фотоотчета:', error);
             showAlert('Ошибка при обновлении фотоотчета', 'error');
             setUploadProgress(null);
+            setSaving(false);
         }
     };
 
@@ -239,23 +245,7 @@ export const EditPhotoReportModal: React.FC<EditPhotoReportModalProps> = ({
                         />
                     </div>
 
-                    <div className="form-group">
-                        <label>Категории</label>
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                            {['фундамент','стены','отделка'].map(opt => (
-                                <label key={opt} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
-                                    <input
-                                        type="checkbox"
-                                        checked={tags.includes(opt)}
-                                        onChange={(e) => {
-                                            setTags(prev => e.target.checked ? [...prev, opt] : prev.filter(t => t !== opt));
-                                        }}
-                                    />
-                                    <span>{opt}</span>
-                                </label>
-                            ))}
-                        </div>
-                    </div>
+                    {/* Раздел категорий удален по запросу */}
 
                     <div className="form-group">
                         <label htmlFor="stage">Этап работ</label>
@@ -344,7 +334,7 @@ export const EditPhotoReportModal: React.FC<EditPhotoReportModalProps> = ({
                         type="button" 
                         className="btn btn-primary" 
                         onClick={handleSave}
-                        disabled={isUploading || !title.trim() || photos.length === 0}
+                        disabled={isUploading || saving || !title.trim() || photos.length === 0}
                     >
                         {isUploading ? (
                             uploadProgress ? 

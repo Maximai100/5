@@ -544,6 +544,7 @@ export interface ProjectDetailViewProps {
         loading: boolean;
         error: string | null;
     };
+    onUpdatePhotoReport?: (id: string, updates: Partial<PhotoReport>) => void;
 }
 
 export interface InventoryViewProps {
