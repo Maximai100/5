@@ -111,10 +111,21 @@ export const useProjects = () => {
     
     const loadProjectsFromSupabase = useCallback(async () => {
         try {
+            // Получаем текущего пользователя
+            const { data: { user }, error: userError } = await supabase.auth.getUser();
+            if (userError) {
+                console.error('loadProjectsFromSupabase: Ошибка получения пользователя:', userError);
+                return;
+            }
+            if (!user) {
+                console.log('loadProjectsFromSupabase: Пользователь не авторизован');
+                return;
+            }
 
             const { data: projectsData, error } = await supabase
                 .from('projects')
                 .select('*')
+                .eq('user_id', user.id)
                 .order('created_at', { ascending: false });
 
             if (error) {

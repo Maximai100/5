@@ -212,13 +212,16 @@ const App: React.FC = () => {
     const [isDataLoading, setIsDataLoading] = useState(false);
     const [projectsLoaded, setProjectsLoaded] = useState(false);
 
-    // Загружаем проекты всегда (даже без сессии), если ещё не загружали
+    // Загружаем проекты только при наличии сессии
     useEffect(() => {
-        if (!projectsLoaded) {
+        if (session && !projectsLoaded) {
             loadProjectsFromSupabaseRef();
             setProjectsLoaded(true);
+        } else if (!session && projectsLoaded) {
+            // Сбрасываем флаг при выходе из системы
+            setProjectsLoaded(false);
         }
-    }, [projectsLoaded, loadProjectsFromSupabaseRef]);
+    }, [session, projectsLoaded, loadProjectsFromSupabaseRef]);
 
     // Остальные данные загружаем только при активной сессии
     useEffect(() => {
@@ -1445,6 +1448,7 @@ const App: React.FC = () => {
                         onOpenNoteModal={(note) => appState.openModal('note', note)}
                         onDeleteNote={handleDeleteNote}
                         onOpenActModal={(total) => appState.openModal('actGeneration', total)}
+                        onUpdatePhotoReport={projectsHook.updatePhotoReport}
                         onNavigateToTasks={handleNavigateToTasks}
                         onProjectScratchpadChange={projectsHook.updateProjectScratchpad}
                         onExportWorkSchedulePDF={async (project, workStages) => {
