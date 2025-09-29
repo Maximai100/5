@@ -7,13 +7,6 @@ export const ProjectsListView: React.FC<ProjectsListViewProps> = ({
     handleOpenProjectModal, projectStatusFilter, setProjectStatusFilter, projectSearch, setProjectSearch,
     handleInputFocus, filteredProjects, projects, setActiveProjectId, setActiveView
 }) => {
-    console.log('🔍 ProjectsListView: Компонент рендерится');
-    console.log('🔍 ProjectsListView: projects:', projects);
-    console.log('🔍 ProjectsListView: projects.length:', projects?.length);
-    console.log('🔍 ProjectsListView: filteredProjects:', filteredProjects);
-    console.log('🔍 ProjectsListView: filteredProjects.length:', filteredProjects?.length);
-    console.log('🔍 ProjectsListView: projectStatusFilter:', projectStatusFilter);
-    console.log('🔍 ProjectsListView: projectSearch:', projectSearch);
     
     return (
     <>

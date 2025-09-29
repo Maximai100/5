@@ -578,9 +578,6 @@ const App: React.FC = () => {
     }, [activeProject, estimatesHook.estimates, projectDataHook]);
 
     const filteredProjects = useMemo(() => {
-        console.log('🔍 App: filteredProjects useMemo, projectsHook.projects:', projectsHook.projects);
-        console.log('🔍 App: filteredProjects useMemo, projectStatusFilter:', appState.projectStatusFilter);
-        
         const filtered = projectsHook.projects.filter(project => {
             const matchesStatus = appState.projectStatusFilter === 'all' || project.status === appState.projectStatusFilter;
             const matchesSearch = !appState.projectSearch || 
@@ -590,7 +587,6 @@ const App: React.FC = () => {
             return matchesStatus && matchesSearch;
         });
 
-        console.log('🔍 App: filteredProjects result:', filtered);
         return filtered;
     }, [projectsHook.projects, appState.projectStatusFilter, appState.projectSearch]);
 
@@ -1330,7 +1326,6 @@ const App: React.FC = () => {
     }, [appState, notesHook]);
 
     const renderView = () => {
-        console.log('🔍 App: renderView, activeView:', appState.activeView);
         switch (appState.activeView) {
             case 'workspace':
                 return (
@@ -1399,7 +1394,6 @@ const App: React.FC = () => {
                 );
             
             case 'projects':
-                console.log('🔍 App: Рендерим ProjectsListView');
                 return (
                     <React.Suspense fallback={<Loader />}>
                     <ProjectsListView
@@ -1419,7 +1413,6 @@ const App: React.FC = () => {
             
             case 'projectDetail':
                 if (!activeProject) {
-                    console.log('🔍 App: projectDetail без activeProject, переключаемся на projects');
                     appState.setActiveView('projects');
                     return null;
                 }
