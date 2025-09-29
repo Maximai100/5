@@ -23,6 +23,7 @@ export const ProjectsListView: React.FC<ProjectsListViewProps> = ({
         <main>
             <div className="project-filters">
                 <div className="toggle-switch">
+                    <button onClick={() => setProjectStatusFilter('all')} className={projectStatusFilter === 'all' ? 'active' : ''} title="Все проекты">Все</button>
                     <button onClick={() => setProjectStatusFilter('planned')} className={projectStatusFilter === 'planned' ? 'active' : ''} title="Планируются">План</button>
                     <button onClick={() => setProjectStatusFilter('in_progress')} className={projectStatusFilter === 'in_progress' ? 'active' : ''} title="В работе">Работа</button>
                     <button onClick={() => setProjectStatusFilter('on_hold')} className={projectStatusFilter === 'on_hold' ? 'active' : ''} title="На паузе">Пауза</button>

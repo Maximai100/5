@@ -59,7 +59,7 @@ export const useAppState = () => {
     
     // Search and filter states
     const [projectSearch, setProjectSearch] = useState('');
-    const [projectStatusFilter, setProjectStatusFilter] = useState<'planned' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled'>('in_progress');
+    const [projectStatusFilter, setProjectStatusFilter] = useState<'all' | 'planned' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled'>('all');
     
     // Initial state is read synchronously from localStorage via useState initializers above
     

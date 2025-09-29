@@ -580,7 +580,7 @@ const App: React.FC = () => {
     const filteredProjects = useMemo(() => {
 
         const filtered = projectsHook.projects.filter(project => {
-            const matchesStatus = project.status === appState.projectStatusFilter;
+            const matchesStatus = appState.projectStatusFilter === 'all' || project.status === appState.projectStatusFilter;
             const matchesSearch = !appState.projectSearch || 
                 project.name.toLowerCase().includes(appState.projectSearch.toLowerCase()) ||
                 project.client.toLowerCase().includes(appState.projectSearch.toLowerCase()) ||
