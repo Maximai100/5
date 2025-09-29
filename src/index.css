@@ -104,6 +104,22 @@ body {
 /* Небольшое выравнивание, чтобы последний блок не оставлял лишний зазор */
 .app-main > *:last-child { margin-bottom: 12px; }
 
+/* Прячем полосы прокрутки на мобильных (iOS/Android) */
+@media (hover: none) and (pointer: coarse) {
+    .app-main,
+    .modal-body {
+        scrollbar-width: none;           /* Firefox */
+        -ms-overflow-style: none;        /* IE/Edge */
+    }
+    .app-main::-webkit-scrollbar,
+    .modal-body::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+        background: transparent;
+        display: none;
+    }
+}
+
 header {
     display: flex;
     justify-content: space-between;
