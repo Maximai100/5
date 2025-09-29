@@ -1448,8 +1448,8 @@ body.dark-theme .bottom-nav {
 
 .photo-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px;
 }
 .photo-thumbnail {
     aspect-ratio: 1 / 1;
@@ -1520,6 +1520,34 @@ body.dark-theme .bottom-nav {
 .photo-viewer-actions .delete-photo-btn .icon-wrapper, .photo-viewer-actions .close-btn .icon-wrapper {
     width: 28px;
     height: 28px;
+}
+
+/* Tag chip */
+.tag-chip {
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-color);
+    border-radius: 16px;
+    padding: 4px 10px;
+    font-size: 12px;
+    cursor: pointer;
+}
+.tag-chip.active {
+    border-color: var(--primary-color);
+    background: color-mix(in oklab, var(--primary-color) 15%, transparent);
+}
+
+/* Lazy image progressive blur-up */
+.lazy-image {
+    display: block;
+}
+.lazy-image.blur-up {
+    filter: blur(10px);
+    transform: translateZ(0);
+}
+.lazy-image:not(.blur-up) {
+    filter: none;
+    transition: filter 0.3s ease;
 }
 
 .shopping-list {
@@ -1994,7 +2022,7 @@ input[type=number] { -moz-appearance: textfield; }
     right: 8px;
     background: none;
     border: none;
-    color: var(--hint-color);
+    color: var(--link-color);
     cursor: pointer;
     padding: 6px;
     border-radius: 4px;
@@ -3095,6 +3123,14 @@ input[type=number] { -moz-appearance: textfield; }
     max-height: 100%;
     object-fit: contain;
     border-radius: var(--border-radius);
+}
+
+/* Mobile adjustments for photo grid */
+@media (max-width: 768px) {
+    .photo-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 4px;
+    }
 }
 
 .photo-viewer-caption {

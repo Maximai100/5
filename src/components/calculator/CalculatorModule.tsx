@@ -1671,7 +1671,7 @@ const ResultsPage: React.FC<{
 
     const handleExportPdf = async () => {
         try {
-            const PdfServiceInstance = await import('../../services/PdfService');
+            // Экспорт заявки поставщику через общий PdfService
 
             // Собираем строки таблицы
             const rows: { name: string; quantity: string; cost: number | null }[] = [];
@@ -1686,7 +1686,7 @@ const ResultsPage: React.FC<{
                 }
             });
 
-            await PdfServiceInstance.default.generateMaterialsEstimatePDF(
+            await PdfService.generateMaterialsEstimatePDF(
                 {
                     floorArea: totalCalculations.totalFloorArea,
                     wallArea: totalCalculations.totalNetWallArea,
@@ -2338,7 +2338,7 @@ const SupplierRequestModal: React.FC<{
                 note: item.note
             }));
             
-            await PdfServiceInstance.default.generateSupplierRequestPDF(
+            await (await import('../../services/PdfService')).default.generateSupplierRequestPDF(
                 pdfItems,
                 companyProfile
             );
@@ -2894,3 +2894,4 @@ export const CalculatorModule: React.FC<CalculatorModuleProps> = ({ appState, co
         </>
     );
 };
+import PdfService from '../../services/PdfService';

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { PhotoReportModalProps } from '../../types';
+import { PhotoReportModalProps, WorkStage } from '../../types';
 import { IconClose } from '../common/Icon';
 import { useFileStorage } from '../../hooks/useFileStorage';
 
@@ -9,9 +9,11 @@ interface PhotoItem {
     caption: string;
 }
 
-export const PhotoReportModal: React.FC<PhotoReportModalProps> = ({ onClose, onSave, showAlert, projectId }) => {
+export const PhotoReportModal: React.FC<PhotoReportModalProps> = ({ onClose, onSave, showAlert, projectId, workStages }) => {
     const [title, setTitle] = useState('');
     const [photos, setPhotos] = useState<PhotoItem[]>([]);
+    const [tags, setTags] = useState<string[]>([]);
+    const [stage, setStage] = useState<string>('');
     const modalRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { uploadFileWithFallback, createPhotoReport, isUploading } = useFileStorage();
@@ -125,6 +127,8 @@ export const PhotoReportModal: React.FC<PhotoReportModalProps> = ({ onClose, onS
             onSave({
                 id: photoReportRecord.id,
                 title: photoReportRecord.title,
+                tags,
+                stage: stage.trim() || undefined,
                 photos: uploadedPhotos,
                 date: photoReportRecord.date
             });
@@ -153,6 +157,38 @@ export const PhotoReportModal: React.FC<PhotoReportModalProps> = ({ onClose, onS
                         onChange={e => setTitle(e.target.value)} 
                         placeholder="Например, 'Завершение отделки ванной комнаты'" 
                     />
+
+                    <div className="form-group" style={{ marginTop: 12 }}>
+                        <label>Категории</label>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                            {['фундамент','стены','отделка'].map(opt => (
+                                <label key={opt} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={tags.includes(opt)}
+                                        onChange={(e) => {
+                                            setTags(prev => e.target.checked ? [...prev, opt] : prev.filter(t => t !== opt));
+                                        }}
+                                    />
+                                    <span>{opt}</span>
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="form-group" style={{ marginTop: 12 }}>
+                        <label htmlFor="stage">Этап работ</label>
+                        {workStages && workStages.length > 0 ? (
+                            <select id="stage" value={stage} onChange={e => setStage(e.target.value)}>
+                                <option value="">Без этапа</option>
+                                {workStages.map((ws: WorkStage) => (
+                                    <option key={ws.id} value={ws.title}>{ws.title}</option>
+                                ))}
+                            </select>
+                        ) : (
+                            <input id="stage" type="text" value={stage} onChange={e => setStage(e.target.value)} placeholder="Напр., Черновые, Чистовые, Фундамент" />
+                        )}
+                    </div>
                     
                     <label htmlFor="photo-files">Фотографии</label>
                     <input 

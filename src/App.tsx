@@ -63,6 +63,7 @@ import { useNotes } from './hooks/useNotes';
 import { useTasks } from './hooks/useTasks';
 import { useFileStorage } from './hooks/useFileStorage';
 import { dataService, storageService } from './services/storageService';
+import PdfService from './services/PdfService';
 
 const App: React.FC = () => {
     
@@ -822,6 +823,8 @@ const App: React.FC = () => {
     const handleAddPhotoReport = useCallback((photoReport: {
         id: string;
         title: string;
+        tags?: string[];
+        stage?: string;
         photos: Array<{
             url: string;
             path: string;
@@ -836,6 +839,8 @@ const App: React.FC = () => {
                     id: photoReport.id,
                     projectId: appState.activeProjectId,
                     title: photoReport.title,
+                    tags: photoReport.tags,
+                    stage: photoReport.stage,
                     photos: photoReport.photos,
                     date: photoReport.date,
                     createdAt: new Date().toISOString(),
@@ -1165,6 +1170,15 @@ const App: React.FC = () => {
         appState.closeModal('settings');
     }, [companyProfileHook, appState]);
 
+    const handleLogout = useCallback(async () => {
+        try {
+            await supabase.auth.signOut();
+            appState.closeModal('settings');
+        } catch (error) {
+            console.error('Ошибка при выходе из системы:', error);
+        }
+    }, [appState]);
+
     // Item handlers
     const handleAddItem = useCallback(() => {
         estimatesHook.addItem();
@@ -1221,14 +1235,12 @@ const App: React.FC = () => {
         
         appState.setLoading('pdf', true);
         try {
-            const PdfServiceInstance = await import('./services/PdfService');
-            
             // Получаем проект, если смета привязана к проекту
             const project = estimatesHook.currentEstimate.project_id 
                 ? projectsHook.projects.find(p => p.id === estimatesHook.currentEstimate!.project_id) || null
                 : null;
             
-            await PdfServiceInstance.default.generateEstimatePDF(
+            await PdfService.generateEstimatePDF(
                 estimatesHook.currentEstimate,
                 project,
                 companyProfileHook.profile
@@ -1406,8 +1418,7 @@ const App: React.FC = () => {
                         onProjectScratchpadChange={projectsHook.updateProjectScratchpad}
                         onExportWorkSchedulePDF={async (project, workStages) => {
                             try {
-                                const PdfServiceInstance = await import('./services/PdfService');
-                                await PdfServiceInstance.default.generateWorkSchedulePDF(project, workStages, companyProfileHook.profile);
+                                await PdfService.generateWorkSchedulePDF(project, workStages, companyProfileHook.profile);
                             } catch (error) {
                                 console.error('Ошибка при генерации графика работ PDF:', error);
                                 safeShowAlert('Ошибка при генерации PDF графика работ');
@@ -1415,8 +1426,7 @@ const App: React.FC = () => {
                         }}
                         onExportProjectFinancesPDF={async (project, financeEntries) => {
                             try {
-                                const PdfServiceInstance = await import('./services/PdfService');
-                                await PdfServiceInstance.default.generateProjectFinancesPDF(project, financeEntries, companyProfileHook.profile);
+                                await PdfService.generateProjectFinancesPDF(project, financeEntries, companyProfileHook.profile);
                             } catch (error) {
                                 console.error('Ошибка при генерации PDF финансов проекта:', error);
                                 safeShowAlert('Ошибка при генерации PDF (финансы)');
@@ -1781,6 +1791,7 @@ const App: React.FC = () => {
                     onRemoveLogo={handleRemoveLogo}
                     onSave={handleSaveProfile}
                     onInputFocus={handleInputFocus}
+                    onLogout={handleLogout}
                 />
             )}
 
@@ -1846,6 +1857,7 @@ const App: React.FC = () => {
                     onSave={handleAddPhotoReport}
                     showAlert={safeShowAlert}
                     projectId={appState.activeProjectId || ''}
+                    workStages={projectDataHook?.getWorkStagesByProject(appState.activeProjectId || '')}
                 />
             )}
 

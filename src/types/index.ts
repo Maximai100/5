@@ -182,6 +182,9 @@ export interface PhotoReport {
     id: string; // Генерируется UUID
     projectId: string;
     title: string;
+    // Доп. метаданные для группировки и фильтрации
+    tags?: string[]; // Теги/категории (например: фундамент, стены, отделка)
+    stage?: string; // Этап работ (свободный текст или ID этапа)
     photos: Array<{
         url: string;
         path: string;
@@ -253,6 +256,7 @@ export interface SettingsModalProps {
     onRemoveLogo: () => void;
     onSave: () => void;
     onInputFocus: (e: React.FocusEvent<HTMLElement>) => void;
+    onLogout: () => void;
 }
 
 export type EstimateTemplate = {
@@ -325,6 +329,8 @@ export interface PhotoReportModalProps {
     onSave: (photoReport: {
         id: string;
         title: string;
+        tags?: string[];
+        stage?: string;
         photos: Array<{
             url: string;
             path: string;
@@ -334,6 +340,7 @@ export interface PhotoReportModalProps {
     }) => void;
     showAlert: (message: string) => void;
     projectId: string; // ID проекта для фотоотчета
+    workStages?: WorkStage[]; // Этапы проекта для селектора
 }
 
 export interface PhotoViewerModalProps {

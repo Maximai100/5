@@ -1,14 +1,19 @@
 // Service Worker для автоматического обновления PWA
-const CACHE_NAME = 'smeta-app-cache-v3';
-const STATIC_CACHE_NAME = 'smeta-static-v3';
-const DYNAMIC_CACHE_NAME = 'smeta-dynamic-v3';
+const CACHE_NAME = 'smeta-app-cache-v4';
+const STATIC_CACHE_NAME = 'smeta-static-v4';
+const DYNAMIC_CACHE_NAME = 'smeta-dynamic-v4';
 
 // Статические ресурсы для кэширования
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/logo.png',
-  '/manifest.webmanifest'
+  '/manifest.webmanifest',
+  '/apple-touch-icon.png',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/maskable-192.png',
+  '/maskable-512.png'
 ];
 
 // Ресурсы, которые должны всегда обновляться
@@ -63,9 +68,17 @@ self.addEventListener('fetch', (event) => {
   
   // Пропускаем не-GET запросы
   if (request.method !== 'GET') return;
-  
-  // Пропускаем запросы к внешним доменам
-  if (url.origin !== location.origin) return;
+
+  // Кэшируем внешние изображения (например, Supabase Storage)
+  const isImage = url.pathname.match(/\.(png|jpg|jpeg|gif|webp|avif)$/i);
+  const isSupabase = /supabase\.co/.test(url.hostname) || /supabase\.in/.test(url.hostname);
+  if (url.origin !== location.origin) {
+    if (isImage || isSupabase) {
+      event.respondWith(cacheFirst(request));
+      return;
+    }
+    return; // прочие внешние домены не трогаем
+  }
   
   // Пропускаем запросы к TypeScript файлам и файлам разработки
   if (url.pathname.includes('.ts') || 
@@ -182,7 +195,7 @@ function isStaticAsset(request) {
     return false;
   }
   
-  return url.pathname.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf)$/);
+  return url.pathname.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|webp|avif)$/);
 }
 
 // Обработка сообщений от клиента
@@ -221,3 +234,15 @@ async function checkForUpdates() {
     console.log('SW: Error checking for updates:', error);
   }
 }
+
+// Background Sync: заготовка для будущей синхронизации
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'photo-sync') {
+    event.waitUntil((async () => {
+      // Здесь может быть логика повторной отправки отложенных запросов загрузки
+      // из IndexedDB очереди. В текущей версии задание — заглушка.
+      // Например: await replayQueuedUploads();
+      return Promise.resolve();
+    })());
+  }
+});

@@ -4,6 +4,7 @@ import {
     Tool, Consumable, ProjectFinancials, ProjectStatus 
 } from '../types';
 import { dataService, dataUtils } from '../services/storageService';
+import { photoReportMetaService } from '../services/photoReportMetaService';
 import { supabase } from '../supabaseClient';
 import { useFileStorage } from './useFileStorage';
 
@@ -243,7 +244,9 @@ export const useProjects = () => {
                 
                 console.log('loadPhotoReportsFromSupabase: Загружено фотоотчетов из Supabase:', mappedPhotoReports.length);
                 
-                setPhotoReports(mappedPhotoReports);
+                // Смешиваем локальные метаданные (tags, stage), сохраненные отдельно
+                const merged = photoReportMetaService.mergeMeta(mappedPhotoReports);
+                setPhotoReports(merged);
                 
                 console.log('loadPhotoReportsFromSupabase: Фотоотчеты установлены в состояние');
             } else {
@@ -473,6 +476,13 @@ export const useProjects = () => {
             projectId
         });
         setPhotoReports(prev => [...prev, newReport]);
+        // Сохраняем метаданные отдельно, чтобы пережили перезагрузку из Supabase
+        if (newReport.tags || newReport.stage) {
+            photoReportMetaService.set(newReport.id, {
+                tags: newReport.tags,
+                stage: newReport.stage,
+            });
+        }
         return newReport;
     }, []);
     
@@ -480,10 +490,17 @@ export const useProjects = () => {
         setPhotoReports(prev => prev.map(report => 
             report.id === id ? dataUtils.updateTimestamps({ ...report, ...updates }) : report
         ));
+        if (updates.tags !== undefined || updates.stage !== undefined) {
+            photoReportMetaService.set(id, {
+                ...(updates.tags !== undefined ? { tags: updates.tags } : {}),
+                ...(updates.stage !== undefined ? { stage: updates.stage } : {}),
+            });
+        }
     }, []);
     
     const deletePhotoReport = useCallback((id: string) => {
         setPhotoReports(prev => prev.filter(p => p.id !== id));
+        photoReportMetaService.remove(id);
     }, []);
     
     const getPhotoReportsByProject = useCallback((projectId: string) => {

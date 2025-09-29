@@ -4,6 +4,7 @@ import { ListItem } from '../ui/ListItem';
 import { IconTrendingUp, IconCreditCard, IconChevronRight, IconDownload } from '../common/Icon';
 import { financeCategoryToRu } from '../../utils';
 import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
+import PdfService from '../../services/PdfService';
 
 interface ProjectFinancialReportScreenProps {
   project: Project;
@@ -54,8 +55,7 @@ export const ProjectFinancialReportScreen: React.FC<ProjectFinancialReportScreen
 
   const handleExportDashboardPDF = async () => {
     try {
-      const PdfServiceInstance = await import('../../services/PdfService');
-      await PdfServiceInstance.default.generateProjectFinancialDashboardPDF(
+      await PdfService.generateProjectFinancialDashboardPDF(
         project,
         projectEstimates,
         projectFinanceEntries,
@@ -193,7 +193,7 @@ export const ProjectFinancialReportScreen: React.FC<ProjectFinancialReportScreen
             <div className="header-actions">
               <button
                 type="button"
-                className="btn-icon"
+                className="add-in-header-btn"
                 title="Экспорт в PDF"
                 aria-label="Экспорт в PDF"
                 onClick={handleExportDashboardPDF}

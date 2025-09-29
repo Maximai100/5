@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { CompanyProfile, SettingsModalProps } from '../../types';
 import { IconClose } from '../common/Icon';
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ profile, onClose, onProfileChange, onLogoChange, onRemoveLogo, onSave, onInputFocus }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ profile, onClose, onProfileChange, onLogoChange, onRemoveLogo, onSave, onInputFocus, onLogout }) => {
     const modalRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -77,8 +77,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ profile, onClose, 
                         <input type="file" accept="image/png, image/jpeg" onChange={onLogoChange} />
                     )}
                 </div>
-                <div className="modal-footer">
+                <div className="modal-footer" style={{ display: 'flex', justifyContent: 'center', gap: '16px' }}>
                     <button onClick={onSave} className="btn btn-primary">Сохранить</button>
+                    <button onClick={onLogout} className="btn btn-secondary">Выйти</button>
                 </div>
             </div>
         </div>

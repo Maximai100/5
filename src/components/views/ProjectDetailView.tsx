@@ -8,8 +8,10 @@ import ImageViewerModal from '../modals/ImageViewerModal';
 import { EditPhotoReportModal } from '../modals/EditPhotoReportModal';
 import { formatDueDate, financeCategoryToRu, downloadFileFromUrl, safeShowAlert } from '../../utils';
 import './ProjectDetailView.css';
+import LazyImage from '../photos/LazyImage';
 import { FinanceEntryModal } from '../modals/FinanceEntryModal';
 import { CollapsibleSection } from '../common/CollapsibleSection';
+import PdfService from '../../services/PdfService';
 
 // Карта приоритетов для задач
 const priorityMap: Record<string, { color: string, name: string }> = {
@@ -62,7 +64,9 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
     activeProject, estimates, photoReports, documents, workStages, tasks, formatCurrency, statusMap, setActiveView, setActiveProjectId,
     handleOpenProjectModal, handleDeleteProject, handleLoadEstimate, handleAddNewEstimateForProject, handleDeleteProjectEstimate,
     onOpenFinanceModal, onDeleteFinanceEntry, onOpenPhotoReportModal, onViewPhoto, onOpenDocumentModal, onDeleteDocument,
-    onOpenWorkStageModal, onDeleteWorkStage, onOpenActModal, onNavigateToTasks, onProjectScratchpadChange, onExportWorkSchedulePDF, onOpenEstimatesListModal, financials, financeEntries, notesHook, tasksHook, appState, projectDataHook
+    onOpenWorkStageModal, onDeleteWorkStage, onOpenActModal, onNavigateToTasks, onProjectScratchpadChange,
+    onExportWorkSchedulePDF, onOpenEstimatesListModal, financials, financeEntries, notesHook, tasksHook, appState, projectDataHook,
+    onExportProjectFinancesPDF
 }) => {
     // Состояние для выбранной задачи
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -252,7 +256,29 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                 </div>
             </header>
             <main className="project-detail-main">
-                <CollapsibleSection title="Финансовый дашборд" className="financial-dashboard">
+                <CollapsibleSection title="Финансовый дашборд" className="financial-dashboard" 
+                    headerActions={
+                        <button
+                            className="add-in-header-btn"
+                            title="Экспорт в PDF"
+                            aria-label="Экспорт в PDF"
+                            onClick={async (e) => {
+                                e.preventDefault();
+                                try {
+                                    await PdfService.generateProjectFinancialDashboardPDF(
+                                        activeProject,
+                                        estimates,
+                                        financeEntries,
+                                        null
+                                    );
+                                } catch (error) {
+                                    console.error('Ошибка экспорта PDF дашборда:', error);
+                                }
+                            }}
+                        >
+                            <IconDownload />
+                        </button>
+                    }>
                     <div className="dashboard-grid-final">
                         <div className="dashboard-column">
                             <div className="dashboard-item">
@@ -452,22 +478,13 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                         <>
                             {projectWorkStages.length > 0 && (
                                 <button 
-                                    className="add-in-header-btn export-pdf-btn" 
-                                    style={{ color: 'var(--hint-color)', opacity: 0.7 }}
+                                    className="add-in-header-btn" 
                                     onClick={(e) => {
                                         e.preventDefault(); 
                                         e.stopPropagation();
                                         onExportWorkSchedulePDF(activeProject, projectWorkStages);
                                     }}
                                     title="Экспорт в PDF"
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.style.color = 'var(--text-color)';
-                                        e.currentTarget.style.opacity = '1';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.color = 'var(--hint-color)';
-                                        e.currentTarget.style.opacity = '0.7';
-                                    }}
                                 >
                                     <IconDownload />
                                 </button>
@@ -523,7 +540,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                     headerActions={
                         <>
                           <button
-                            className="btn-icon"
+                            className="add-in-header-btn"
                             title="Экспорт в PDF"
                             aria-label="Экспорт в PDF"
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); onExportProjectFinancesPDF && onExportProjectFinancesPDF(activeProject, projectFinances); }}
@@ -650,43 +667,11 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                     }
                 >
                         {projectPhotos.length > 0 ? (
-                            <div className="photo-reports-list">
-                                {projectPhotos.map(photoReport => (
-                                    <div key={photoReport.id} className="photo-report-item">
-                                        <div className="photo-report-header">
-                                            <h4>{photoReport.title}</h4>
-                                            <div className="photo-report-actions">
-                                                <span className="photo-report-date">
-                                                    {new Date(photoReport.date).toLocaleDateString('ru-RU')}
-                                                </span>
-                                                <button 
-                                                    className="edit-photo-report-btn"
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        handleEditPhotoReport(photoReport);
-                                                    }}
-                                                    aria-label="Редактировать фотоотчет"
-                                                >
-                                                    <IconEdit />
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div className="photo-grid">
-                                            {photoReport.photos.slice(0, 3).map((photo, index) => (
-                                                <div key={index} className="photo-thumbnail" onClick={() => onViewPhoto(photoReport)}>
-                                                    <img src={photo.url} alt={photo.caption || 'фото'}/>
-                                                </div>
-                                            ))}
-                                            {photoReport.photos.length > 3 && (
-                                                <div className="photo-thumbnail more-photos">
-                                                    <span>+{photoReport.photos.length - 3}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                            <PhotoReportsSection
+                                reports={projectPhotos}
+                                onEdit={handleEditPhotoReport}
+                                onView={onViewPhoto}
+                            />
                         ) : (
                             <div className="empty-state-container">
                                 <IconCamera />
@@ -712,6 +697,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                     onClose={handleCloseEditPhotoReport}
                     onSave={handleSavePhotoReport}
                     showAlert={safeShowAlert}
+                    workStages={workStages}
                 />
             )}
             {/* Модальное окно редактирования задачи */}
@@ -736,5 +722,115 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                 />
             )}
         </>
+    );
+};
+
+// Вспомогательный раздел для фотоотчетов с фильтрами и группировкой
+const PhotoReportsSection: React.FC<{
+    reports: PhotoReport[];
+    onEdit: (pr: PhotoReport) => void;
+    onView: (pr: PhotoReport) => void;
+}> = ({ reports, onEdit, onView }) => {
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+    const allTags = useMemo(() => {
+        const s = new Set<string>();
+        reports.forEach(r => (r.tags || []).forEach(t => s.add(t)));
+        return Array.from(s);
+    }, [reports]);
+
+    const filtered = useMemo(() => {
+        if (!selectedTags.length) return reports;
+        return reports.filter(r => {
+            const tags = r.tags || [];
+            return selectedTags.every(t => tags.includes(t));
+        });
+    }, [reports, selectedTags]);
+
+    const groups = useMemo(() => {
+        const map = new Map<string, PhotoReport[]>();
+        filtered
+            .slice()
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            .forEach(r => {
+                const key = r.stage?.trim() || 'Без этапа';
+                const arr = map.get(key) || [];
+                arr.push(r);
+                map.set(key, arr);
+            });
+        return Array.from(map.entries());
+    }, [filtered]);
+
+    return (
+        <div className="photo-reports-list">
+            {allTags.length > 0 && (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+                    {allTags.map(tag => (
+                        <button
+                            key={tag}
+                            type="button"
+                            className={selectedTags.includes(tag) ? 'tag-chip active' : 'tag-chip'}
+                            onClick={() => setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
+                        >
+                            {tag}
+                        </button>
+                    ))}
+                    {selectedTags.length > 0 && (
+                        <button type="button" className="tag-chip" onClick={() => setSelectedTags([])}>Сбросить</button>
+                    )}
+                </div>
+            )}
+
+            {groups.map(([stage, items]) => (
+                <div key={stage} style={{ marginBottom: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '4px 0 8px' }}>
+                        <h4 style={{ margin: 0 }}>{stage}</h4>
+                        <span style={{ color: 'var(--hint-color)', fontSize: 12 }}>{items.length} шт.</span>
+                    </div>
+                    {items.map(photoReport => (
+                        <div key={photoReport.id} className="photo-report-item">
+                            <div className="photo-report-header">
+                                <h4>{photoReport.title}</h4>
+                                <div className="photo-report-actions">
+                                    <span className="photo-report-date">
+                                        {new Date(photoReport.date).toLocaleDateString('ru-RU')}
+                                    </span>
+                                    <button 
+                                        className="edit-photo-report-btn"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            onEdit(photoReport);
+                                        }}
+                                        aria-label="Редактировать фотоотчет"
+                                    >
+                                        <IconEdit />
+                                    </button>
+                                </div>
+                            </div>
+                            {(photoReport.tags && photoReport.tags.length > 0) && (
+                                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '0 0 8px' }}>
+                                    {photoReport.tags.map(t => (
+                                        <span key={t} className="tag-chip" style={{ cursor: 'pointer' }} onClick={() => setSelectedTags(prev => prev.includes(t) ? prev : [...prev, t])}>{t}</span>
+                                    ))}
+                                </div>
+                            )}
+                            <div className="photo-grid">
+                                {photoReport.photos.slice(0, 3).map((photo, index) => (
+                                    <div key={index} className="photo-thumbnail" onClick={() => onView(photoReport)}>
+                                        <LazyImage src={photo.url} alt={photo.caption || 'фото'} />
+                                    </div>
+                                ))}
+                                {photoReport.photos.length > 3 && (
+                                    <div className="photo-thumbnail more-photos" onClick={() => onView(photoReport)}>
+                                        <span>+{photoReport.photos.length - 3}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ))}
+        </div>
     );
 };
