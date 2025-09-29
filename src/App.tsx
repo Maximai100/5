@@ -48,6 +48,7 @@ const CalculatorView = React.lazy(() => import('./components/views/CalculatorVie
 import { ListItem } from './components/ui/ListItem';
 import { useProjectContext, ProjectProvider } from './context/ProjectContext';
 const AuthScreen = React.lazy(() => import('./components/views/AuthScreen').then(m => ({ default: m.default })));
+const OnboardingScreen = React.lazy(() => import('./components/views/OnboardingScreen').then(m => ({ default: m.default })));
 import { supabase } from './supabaseClient';
 import type { Session } from '@supabase/supabase-js';
 
@@ -73,6 +74,7 @@ const App: React.FC = () => {
     
     // Supabase auth session
     const [session, setSession] = useState<Session | null>(null);
+    const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
     // Error handler
     const handleError = (error: Error) => {
@@ -169,8 +171,37 @@ const App: React.FC = () => {
         getInitialSession();
 
         // Подписываемся на изменения состояния авторизации
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             setSession(session);
+            
+            // Проверяем, нужен ли onboarding после регистрации
+            if (event === 'SIGNED_UP' && session?.user) {
+                // Проверяем, есть ли данные в user_meta_data
+                const userMeta = session.user.user_metadata;
+                const hasOnboardingData = userMeta?.first_name && userMeta?.last_name && userMeta?.phone && userMeta?.city;
+                
+                if (!hasOnboardingData) {
+                    setNeedsOnboarding(true);
+                }
+            } else if (event === 'SIGNED_IN' && session?.user) {
+                // При входе также проверяем, нужен ли onboarding
+                const userMeta = session.user.user_metadata;
+                const hasOnboardingData = userMeta?.first_name && userMeta?.last_name && userMeta?.phone && userMeta?.city;
+                
+                if (!hasOnboardingData) {
+                    setNeedsOnboarding(true);
+                } else {
+                    setNeedsOnboarding(false);
+                }
+            } else if (event === 'USER_UPDATED' && session?.user) {
+                // После обновления пользователя проверяем, завершен ли onboarding
+                const userMeta = session.user.user_metadata;
+                const hasOnboardingData = userMeta?.first_name && userMeta?.last_name && userMeta?.phone && userMeta?.city;
+                
+                if (hasOnboardingData) {
+                    setNeedsOnboarding(false);
+                }
+            }
         });
 
         return () => subscription.unsubscribe();
@@ -1652,6 +1683,12 @@ const App: React.FC = () => {
                 {(!session) ? (
                     <main>
                         <AuthScreen />
+                    </main>
+                ) : needsOnboarding ? (
+                    <main>
+                        <React.Suspense fallback={<Loader />}>
+                            <OnboardingScreen />
+                        </React.Suspense>
                     </main>
                 ) : (
                 <>

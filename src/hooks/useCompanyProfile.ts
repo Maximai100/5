@@ -27,6 +27,7 @@ export const useCompanyProfile = (session: Session | null) => {
       // Добавляем задержку перед запросом (следуем SUPABASE_SAFETY_GUIDE)
       await new Promise(resolve => setTimeout(resolve, 100 * (retryCount + 1)));
       
+      // 1. Сначала загружаем профиль компании из нашей таблицы `company_profiles`
       const { data, error } = await supabase
         .from('company_profiles')
         .select('*')
@@ -48,12 +49,22 @@ export const useCompanyProfile = (session: Session | null) => {
         return;
       }
 
-      if (data) {
+      // 2. Если профиль компании ЕЩЕ НЕ СОЗДАН...
+      if (!data && !error) {
+        // ...тогда мы берем данные из user_meta_data, чтобы предзаполнить форму
+        const userMeta = sess.user.user_metadata;
+        
+        const initialProfileData = {
+          name: `${userMeta?.last_name || ''} ${userMeta?.first_name || ''}`.trim(), // Формируем название
+          details: `Телефон: ${userMeta?.phone || ''}\nГород: ${userMeta?.city || ''}`, // Формируем реквизиты
+          logo: null
+        };
+        setProfile(initialProfileData); // Устанавливаем предзаполненные данные в состояние
+
+      } else if (data) {
+        // Если профиль компании уже существует, просто используем его
         const mappedProfile = mapRowToProfile(data);
-
         setProfile(mappedProfile);
-      } else {
-
       }
     } catch (error) {
       console.error('🔧 useCompanyProfile.fetchProfile: Критическая ошибка:', error);
