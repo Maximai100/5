@@ -63,7 +63,7 @@ export const useAppState = () => {
     
     // Search and filter states
     const [projectSearch, setProjectSearch] = useState('');
-    const [projectStatusFilter, setProjectStatusFilter] = useState<'all' | 'planned' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled'>('all');
+    const [projectStatusFilter, setProjectStatusFilter] = useState<'all' | 'planned' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled'>(() => dataService.getProjectStatusFilter());
     
     // Initial state is read synchronously from localStorage via useState initializers above
     
@@ -83,6 +83,10 @@ export const useAppState = () => {
     useEffect(() => {
         dataService.setThemeMode(themeMode);
     }, [themeMode]);
+    
+    useEffect(() => {
+        dataService.setProjectStatusFilter(projectStatusFilter);
+    }, [projectStatusFilter]);
     
     // Theme management
     const handleThemeChange = useCallback(() => {

@@ -25,6 +25,7 @@ const STORAGE_KEYS = {
     ACTIVE_PROJECT_ID: 'activeProjectId',
     ACTIVE_VIEW: 'activeView',
     THEME_MODE: 'themeMode',
+    PROJECT_STATUS_FILTER: 'projectStatusFilter',
     ESTIMATE_TEMPLATES: 'estimateTemplates',
     CALCULATOR_STATE: 'calculatorState'
 } as const;
@@ -366,6 +367,14 @@ export const dataService = {
 
     setThemeMode(mode: 'light' | 'dark'): void {
         storageService.set(STORAGE_KEYS.THEME_MODE, mode);
+    },
+
+    getProjectStatusFilter(): 'all' | 'planned' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled' {
+        return storageService.get(STORAGE_KEYS.PROJECT_STATUS_FILTER, 'all');
+    },
+
+    setProjectStatusFilter(filter: 'all' | 'planned' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled'): void {
+        storageService.set(STORAGE_KEYS.PROJECT_STATUS_FILTER, filter);
     },
 
     // Estimate Templates

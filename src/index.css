@@ -1063,10 +1063,10 @@ body.dark-theme .bottom-nav {
     text-overflow: ellipsis;
     min-width: 0;
 }
-/* .toggle-switch button.active {
+.toggle-switch button.active {
     background-color: var(--primary-color);
     color: var(--primary-text-color);
-} */
+}
 .projects-list {
     display: flex;
     flex-direction: column;
