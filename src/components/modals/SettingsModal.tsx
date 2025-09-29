@@ -28,7 +28,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ profile, onClose, 
                     <label>Название компании</label>
                     <input type="text" value={profile.name} onChange={(e) => onProfileChange('name', e.target.value)} onFocus={onInputFocus} placeholder="Ваше ИП или название" />
                     <label>Реквизиты / Контакты</label>
-                    <textarea value={profile.details} onChange={(e) => onProfileChange('details', e.target.value)} onFocus={onInputFocus} placeholder="Телефон, адрес, email..." rows={3} />
+                    <textarea value={profile.details} onChange={(e) => onProfileChange('details', e.target.value)} onFocus={onInputFocus} placeholder="Телефон, адрес, email..." rows={9} />
                     <label>Логотип</label>
                     {profile.logo ? (
                         <div className="logo-preview-container">
