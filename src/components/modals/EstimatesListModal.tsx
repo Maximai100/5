@@ -3,7 +3,7 @@ import { Estimate, EstimatesListModalProps, EstimateStatus, EstimateTemplate } f
 import { IconClose, IconClipboard, IconTrash } from '../common/Icon';
 import { useProjectContext } from '../../context/ProjectContext';
 
-export const EstimatesListModal: React.FC<EstimatesListModalProps> = ({ onClose, estimates, templates, activeEstimateId, statusMap, formatCurrency, onLoadEstimate, onDeleteEstimate, onStatusChange, onSaveAsTemplate, onDeleteTemplate, onNewEstimate, onInputFocus }) => {
+export const EstimatesListModal: React.FC<EstimatesListModalProps> = ({ onClose, estimates, templates, activeEstimateId, statusMap, formatCurrency, onLoadEstimate, onDeleteEstimate, onStatusChange, onSaveAsTemplate, onDeleteTemplate, onNewEstimate, onCopyToProject, isFromProject, onInputFocus }) => {
     const [activeTab, setActiveTab] = useState<'estimates' | 'templates'>('estimates');
     const [estimatesSearch, setEstimatesSearch] = useState('');
     const modalRef = useRef<HTMLDivElement>(null);
@@ -20,7 +20,13 @@ export const EstimatesListModal: React.FC<EstimatesListModalProps> = ({ onClose,
         }
     }, []);
 
-    const filteredEstimates = useMemo(() => estimates.filter(e => e.number.toLowerCase().includes(estimatesSearch.toLowerCase()) || (e.clientInfo && e.clientInfo.toLowerCase().includes(estimatesSearch.toLowerCase()))), [estimates, estimatesSearch]);
+    const filteredEstimates = useMemo(() => {
+        // Применяем поиск ко всем сметам
+        return estimates.filter(e => 
+            e.number.toLowerCase().includes(estimatesSearch.toLowerCase()) || 
+            (e.clientInfo && e.clientInfo.toLowerCase().includes(estimatesSearch.toLowerCase()))
+        );
+    }, [estimates, estimatesSearch]);
     const filteredTemplates = useMemo(() => {
 
         if (!estimatesSearch.trim()) {
@@ -78,7 +84,18 @@ export const EstimatesListModal: React.FC<EstimatesListModalProps> = ({ onClose,
                                         <span className="status-badge" style={{ backgroundColor: statusMap[e.status].color, color: statusMap[e.status].textColor }}>{statusMap[e.status].text}</span>
                                     </div>
                                 </div>
-                                <div className="list-item-actions"><select value={e.status} onChange={(ev) => onStatusChange(e.id, ev.target.value as EstimateStatus)} onClick={ev => ev.stopPropagation()} className="status-select">{Object.entries(statusMap).map(([k, v]) => (<option key={k} value={k}>{v.text}</option>))}</select><button onClick={() => onSaveAsTemplate(e.id)} className="btn btn-secondary" title="Сохранить как шаблон"><IconClipboard/></button><button onClick={() => onLoadEstimate(e.id)} className="btn btn-secondary">Загрузить</button><button onClick={() => onDeleteEstimate(e.id)} className="btn btn-tertiary"><IconTrash/></button></div>
+                                <div className="list-item-actions">
+                                    <select value={e.status} onChange={(ev) => onStatusChange(e.id, ev.target.value as EstimateStatus)} onClick={ev => ev.stopPropagation()} className="status-select">
+                                        {Object.entries(statusMap).map(([k, v]) => (<option key={k} value={k}>{v.text}</option>))}
+                                    </select>
+                                    <button onClick={() => onSaveAsTemplate(e.id)} className="btn btn-secondary" title="Сохранить как шаблон"><IconClipboard/></button>
+                                    {isFromProject && onCopyToProject ? (
+                                        <button onClick={() => onCopyToProject(e.id)} className="btn btn-primary" title="Добавить в проект">Добавить</button>
+                                    ) : (
+                                        <button onClick={() => onLoadEstimate(e.id)} className="btn btn-secondary">Загрузить</button>
+                                    )}
+                                    <button onClick={() => onDeleteEstimate(e.id)} className="btn btn-tertiary"><IconTrash/></button>
+                                </div>
                             </div>))
                         }
                     </>)}

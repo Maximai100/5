@@ -278,6 +278,8 @@ export interface EstimatesListModalProps {
     onSaveAsTemplate: (id: string) => void;
     onDeleteTemplate: (templateId: string) => void;
     onNewEstimate: (template?: EstimateTemplate) => void;
+    onCopyToProject?: (id: string) => void;
+    isFromProject?: boolean;
     onInputFocus: (e: React.FocusEvent<HTMLElement>) => void;
 }
 
@@ -496,7 +498,7 @@ export interface ProjectDetailViewProps {
     onNavigateToTasks: () => void;
     onProjectScratchpadChange: (projectId: string, content: string) => void;
     onExportWorkSchedulePDF: (project: Project, workStages: WorkStage[]) => void;
-    onOpenEstimatesListModal: () => void;
+    onOpenEstimatesListModal: (data?: any) => void;
     notesHook: {
         getNote: (context: NoteContext, entityId?: string | null) => string;
         saveNote: (context: NoteContext, content: string, entityId?: string | null) => Promise<void>;

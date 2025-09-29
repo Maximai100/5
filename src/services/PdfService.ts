@@ -1,6 +1,6 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Estimate, Project, CompanyProfile, WorkStage, Item } from '../types';
+import { Estimate, Project, CompanyProfile, WorkStage, Item, FinanceEntry } from '../types';
 
 // Расширяем типы для jsPDF с autotable
 declare module 'jspdf' {
@@ -11,6 +11,9 @@ declare module 'jspdf' {
 
 class PdfService {
   private static readonly FONT_NAME = 'Roboto';
+  private static readonly BRAND_PRIMARY: [number, number, number] = [52, 120, 246];
+  private static readonly BRAND_DARK: [number, number, number] = [40, 40, 40];
+  private static readonly BRAND_LIGHT: [number, number, number] = [245, 248, 255];
 
   // Cache loaded base64 font data to avoid repeated fetches
   private static fontCache: { regular?: string; bold?: string } = {};
@@ -62,6 +65,115 @@ class PdfService {
       doc.addFont('Roboto-Bold.ttf', PdfService.FONT_NAME, 'bold');
     }
     docWithFlag._robotoRegistered = true;
+  }
+
+  private static async fetchImageAsDataUrl(url: string): Promise<string | null> {
+    if (!url) return null;
+    try {
+      const res = await fetch(url, { mode: 'cors' });
+      if (!res.ok) return null;
+      const blob = await res.blob();
+      const reader = new FileReader();
+      const dataUrlPromise = new Promise<string>((resolve, reject) => {
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error('Failed to read image as DataURL'));
+      });
+      reader.readAsDataURL(blob);
+      return await dataUrlPromise;
+    } catch (e) {
+      console.warn('fetchImageAsDataUrl failed:', e);
+      return null;
+    }
+  }
+
+  private static async drawCompanyHeader(
+    doc: jsPDF,
+    companyProfile: CompanyProfile | null,
+    title: string,
+    subtitle?: string
+  ): Promise<number> {
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let y = 18;
+
+    // Top accent bar
+    doc.setFillColor(...PdfService.BRAND_PRIMARY);
+    doc.rect(0, 0, pageWidth, 6, 'F');
+
+    // Logo (left) + company info (right)
+    let logoDrawn = false;
+    if (companyProfile?.logo) {
+      try {
+        const dataUrl = await PdfService.fetchImageAsDataUrl(companyProfile.logo);
+        if (dataUrl) {
+          const imgW = 28;
+          const imgH = 28;
+          doc.addImage(dataUrl, 'PNG', 16, 10, imgW, imgH, undefined, 'FAST');
+          logoDrawn = true;
+        }
+      } catch (e) {
+        console.warn('Logo draw failed:', e);
+      }
+    }
+
+    // Company name and details
+    const leftX = logoDrawn ? 50 : 16;
+    doc.setTextColor(...PdfService.BRAND_DARK);
+    doc.setFontSize(12);
+    PdfService.ensureCyrillicSupport(doc, 'bold');
+    doc.text(companyProfile?.name || 'Компания', leftX, 18);
+
+    if (companyProfile?.details) {
+      doc.setFontSize(9);
+      PdfService.ensureCyrillicSupport(doc);
+      const detailsLines = companyProfile.details.split('\n');
+      let detailsY = 24;
+      detailsLines.forEach((line) => {
+        const trimmed = line.trim();
+        if (trimmed) doc.text(trimmed, leftX, detailsY);
+        detailsY += 5;
+      });
+      y = Math.max(y, detailsY);
+    } else {
+      y = 26;
+    }
+
+    // Title band
+    y += 6;
+    doc.setFillColor(...PdfService.BRAND_LIGHT);
+    doc.setDrawColor(220, 226, 236);
+    doc.roundedRect(14, y - 10, pageWidth - 28, 18, 3, 3, 'FD');
+    doc.setFontSize(14);
+    PdfService.ensureCyrillicSupport(doc, 'bold');
+    doc.text(title, pageWidth / 2, y + 2, { align: 'center' });
+
+    if (subtitle) {
+      doc.setFontSize(10);
+      PdfService.ensureCyrillicSupport(doc);
+      doc.text(subtitle, pageWidth / 2, y + 9, { align: 'center' });
+      y += 14;
+    } else {
+      y += 10;
+    }
+
+    return y + 2;
+  }
+
+  private static addPageNumbers(doc: jsPDF) {
+    try {
+      const pageCount = (doc as any).getNumberOfPages ? (doc as any).getNumberOfPages() : (doc as any).internal.getNumberOfPages();
+      const size = doc.internal.pageSize;
+      const pageWidth = size.getWidth();
+      const pageHeight = size.getHeight();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        PdfService.ensureCyrillicSupport(doc);
+        doc.setTextColor(120);
+        doc.text(`Стр. ${i} из ${pageCount}`, pageWidth - 20, pageHeight - 8, { align: 'right' });
+      }
+    } catch (e) {
+      console.warn('addPageNumbers failed:', e);
+    }
   }
 
   private static formatCurrency(value: number): string {
@@ -160,18 +272,7 @@ class PdfService {
       const doc = await PdfService.initializeDoc();
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
-      let yPosition = 20;
-
-      // Шапка документа
-      doc.setFontSize(16);
-      PdfService.ensureCyrillicSupport(doc, 'bold');
-      try {
-        doc.text('Заявка поставщику', pageWidth / 2, yPosition, { align: 'center' });
-      } catch (error) {
-        console.warn('Ошибка при добавлении заголовка:', error);
-        doc.text('Zayavka postavshchiku', pageWidth / 2, yPosition, { align: 'center' });
-      }
-      yPosition += 15;
+      let yPosition = await PdfService.drawCompanyHeader(doc, companyProfile, 'ЗАЯВКА ПОСТАВЩИКУ');
 
       // Информация о заказчике
       doc.setFontSize(12);
@@ -270,7 +371,7 @@ class PdfService {
             cellWidth: 'wrap'
           },
           headStyles: {
-            fillColor: [66, 139, 202],
+            fillColor: PdfService.BRAND_PRIMARY,
             textColor: 255,
             fontStyle: 'bold',
             font: PdfService.FONT_NAME,
@@ -305,6 +406,7 @@ class PdfService {
 
       // Сохраняем файл
       const fileName = `Заявка_поставщику_${new Date().toLocaleDateString('ru-RU').replace(/\./g, '_')}.pdf`;
+      PdfService.addPageNumbers(doc);
       doc.save(fileName);
       
       console.log('✅ PDF заявки поставщику успешно сгенерирован');
@@ -325,55 +427,13 @@ class PdfService {
     const doc = await PdfService.initializeDoc();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    let yPosition = 20;
+    let yPosition = await PdfService.drawCompanyHeader(doc, companyProfile, `СМЕТА № ${estimate.number}`, project ? `${project.name} • ${project.address}` : undefined);
 
-    // Профессиональная шапка документа
-
-    // Логотип/название компании по центру (более крупно)
-    doc.setFontSize(18);
-    PdfService.ensureCyrillicSupport(doc, 'bold');
-    doc.text(companyProfile?.name || 'Документ', pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 15;
-
-    // Детали компании по центру (мелким шрифтом)
-    if (companyProfile?.details) {
-      doc.setFontSize(9);
-      PdfService.ensureCyrillicSupport(doc);
-      const detailsLines = companyProfile.details.split('\n');
-      detailsLines.forEach((line, index) => {
-        const trimmedLine = line.trim();
-        if (trimmedLine) {
-          try {
-            const wrappedLines = PdfService.wrapText(doc, trimmedLine, pageWidth - 40);
-            wrappedLines.forEach(wrappedLine => {
-              doc.text(wrappedLine, pageWidth / 2, yPosition, { align: 'center' });
-              yPosition += 6;
-            });
-          } catch (error) {
-            console.warn('Ошибка при переносе текста компании:', error);
-            doc.text(trimmedLine, pageWidth / 2, yPosition, { align: 'center' });
-            yPosition += 6;
-          }
-        }
-      });
-      yPosition += 10;
-    }
-
-    // Разделительная линия
-    doc.setLineWidth(0.5);
-    doc.line(20, yPosition, pageWidth - 20, yPosition);
-    yPosition += 15;
-
-    // Заголовок сметы
-    doc.setFontSize(16);
-    PdfService.ensureCyrillicSupport(doc, 'bold');
-    doc.text(`СМЕТА № ${estimate.number}`, pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 8;
-
+    // Дата сметы
     doc.setFontSize(10);
     PdfService.ensureCyrillicSupport(doc);
-    doc.text(`от ${PdfService.formatDate(estimate.date)}`, pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 20;
+    doc.text(`Дата: ${PdfService.formatDate(estimate.date)}`, 20, yPosition);
+    yPosition += 10;
 
     // Профессиональная секция информации о заказе
     doc.setFontSize(12);
@@ -381,19 +441,14 @@ class PdfService {
     doc.text('ИНФОРМАЦИЯ О ЗАКАЗЕ', 20, yPosition);
     yPosition += 12;
 
-    // Улучшенная рамка для информации о заказе
+    // Улучшенная рамка для информации о заказе (без жесткой тени)
     const infoBoxY = yPosition;
     const infoBoxHeight = 30;
     const infoBoxWidth = pageWidth - 40;
-    
-    // Тень рамки
-    doc.setFillColor(240, 240, 240);
-    doc.rect(22, infoBoxY + 2, infoBoxWidth, infoBoxHeight, 'F');
-    
-    // Основная рамка
-    doc.setLineWidth(0.5);
-    doc.setDrawColor(100, 100, 100);
-    doc.rect(20, infoBoxY, infoBoxWidth, infoBoxHeight);
+    doc.setFillColor(248, 250, 253);
+    doc.setDrawColor(220, 226, 236);
+    doc.setLineWidth(0.3);
+    (doc as any).roundedRect?.(20, infoBoxY, infoBoxWidth, infoBoxHeight, 2, 2, 'FD') ?? doc.rect(20, infoBoxY, infoBoxWidth, infoBoxHeight, 'FD');
 
     doc.setFontSize(10);
     PdfService.ensureCyrillicSupport(doc);
@@ -428,7 +483,7 @@ class PdfService {
         halign: 'left',
       },
       headStyles: {
-        fillColor: [40, 40, 40],
+        fillColor: PdfService.BRAND_PRIMARY,
         textColor: 255,
         fontStyle: 'bold',
         fontSize: 10,
@@ -560,6 +615,7 @@ class PdfService {
     doc.text('(подпись)', pageWidth - 95, rightBoxY + 22);
 
     const fileName = `Смета_${estimate.number}_${PdfService.formatDate(estimate.date)}.pdf`;
+    PdfService.addPageNumbers(doc);
     doc.save(fileName);
     return Promise.resolve();
   }
@@ -577,52 +633,7 @@ class PdfService {
     const doc = await PdfService.initializeDoc();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    let yPosition = 20;
-
-    // Профессиональная шапка документа
-    doc.setFontSize(18);
-    PdfService.ensureCyrillicSupport(doc, 'bold');
-    doc.text(companyProfile.name, pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 15;
-
-    if (companyProfile.details) {
-      doc.setFontSize(9);
-      PdfService.ensureCyrillicSupport(doc);
-      const detailsLines = companyProfile.details.split('\n');
-      detailsLines.forEach((line, index) => {
-        const trimmedLine = line.trim();
-        if (trimmedLine) {
-          try {
-            const wrappedLines = PdfService.wrapText(doc, trimmedLine, pageWidth - 40);
-            wrappedLines.forEach(wrappedLine => {
-              doc.text(wrappedLine, pageWidth / 2, yPosition, { align: 'center' });
-              yPosition += 6;
-            });
-          } catch (error) {
-            console.warn('Ошибка при переносе текста компании:', error);
-            doc.text(trimmedLine, pageWidth / 2, yPosition, { align: 'center' });
-            yPosition += 6;
-          }
-        }
-      });
-      yPosition += 10;
-    }
-
-    // Разделительная линия
-    doc.setLineWidth(0.5);
-    doc.line(20, yPosition, pageWidth - 20, yPosition);
-    yPosition += 15;
-
-    // Заголовок акта
-    doc.setFontSize(16);
-    PdfService.ensureCyrillicSupport(doc, 'bold');
-    doc.text('АКТ', pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 8;
-
-    doc.setFontSize(12);
-    PdfService.ensureCyrillicSupport(doc);
-    doc.text('о приемке выполненных работ', pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 15;
+    let yPosition = await PdfService.drawCompanyHeader(doc, companyProfile, 'АКТ', 'о приемке выполненных работ');
 
     const actNumber = `АКТ-${project.id.slice(-6).toUpperCase()}`;
     const currentDate = PdfService.formatDate(new Date().toISOString());
@@ -641,15 +652,10 @@ class PdfService {
     const infoBoxY = yPosition;
     const infoBoxHeight = 35;
     const infoBoxWidth = pageWidth - 40;
-    
-    // Тень рамки
-    doc.setFillColor(240, 240, 240);
-    doc.rect(22, infoBoxY + 2, infoBoxWidth, infoBoxHeight, 'F');
-    
-    // Основная рамка
-    doc.setLineWidth(0.5);
-    doc.setDrawColor(100, 100, 100);
-    doc.rect(20, infoBoxY, infoBoxWidth, infoBoxHeight);
+    doc.setFillColor(248, 250, 253);
+    doc.setDrawColor(220, 226, 236);
+    doc.setLineWidth(0.3);
+    (doc as any).roundedRect?.(20, infoBoxY, infoBoxWidth, infoBoxHeight, 2, 2, 'FD') ?? doc.rect(20, infoBoxY, infoBoxWidth, infoBoxHeight, 'FD');
 
     doc.setFontSize(10);
     PdfService.ensureCyrillicSupport(doc);
@@ -683,7 +689,7 @@ class PdfService {
           halign: 'left',
         },
         headStyles: {
-          fillColor: [40, 40, 40],
+          fillColor: PdfService.BRAND_PRIMARY,
           textColor: 255,
           fontStyle: 'bold',
           fontSize: 10,
@@ -770,6 +776,7 @@ class PdfService {
     doc.text('(подпись)', pageWidth - 95, rightBoxY + 22);
 
     const fileName = `Акт_${actNumber}_${currentDate}.pdf`;
+    PdfService.addPageNumbers(doc);
     doc.save(fileName);
     return Promise.resolve();
   }
@@ -786,52 +793,7 @@ class PdfService {
     const doc = await PdfService.initializeDoc();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    let yPosition = 20;
-
-    // Профессиональная шапка документа
-    doc.setFontSize(18);
-    PdfService.ensureCyrillicSupport(doc, 'bold');
-    doc.text(companyProfile.name, pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 15;
-
-    if (companyProfile.details) {
-      doc.setFontSize(9);
-      PdfService.ensureCyrillicSupport(doc);
-      const detailsLines = companyProfile.details.split('\n');
-      detailsLines.forEach((line, index) => {
-        const trimmedLine = line.trim();
-        if (trimmedLine) {
-          try {
-            const wrappedLines = PdfService.wrapText(doc, trimmedLine, pageWidth - 40);
-            wrappedLines.forEach(wrappedLine => {
-              doc.text(wrappedLine, pageWidth / 2, yPosition, { align: 'center' });
-              yPosition += 6;
-            });
-          } catch (error) {
-            console.warn('Ошибка при переносе текста компании:', error);
-            doc.text(trimmedLine, pageWidth / 2, yPosition, { align: 'center' });
-            yPosition += 6;
-          }
-        }
-      });
-      yPosition += 10;
-    }
-
-    // Разделительная линия
-    doc.setLineWidth(0.5);
-    doc.line(20, yPosition, pageWidth - 20, yPosition);
-    yPosition += 15;
-
-    // Заголовок графика
-    doc.setFontSize(16);
-    PdfService.ensureCyrillicSupport(doc, 'bold');
-    doc.text('ГРАФИК ВЫПОЛНЕНИЯ РАБОТ', pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 10;
-
-    doc.setFontSize(12);
-    PdfService.ensureCyrillicSupport(doc);
-    doc.text(`Проект: ${project.name}`, pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 20;
+    let yPosition = await PdfService.drawCompanyHeader(doc, companyProfile, 'ГРАФИК ВЫПОЛНЕНИЯ РАБОТ', `Проект: ${project.name}`);
 
     // Информация о проекте в рамке
     doc.setFontSize(12);
@@ -841,23 +803,18 @@ class PdfService {
 
     // Рамка для информации о проекте
     const infoBoxY = yPosition;
-    const infoBoxHeight = 35;
+    // Уберем дублирование названия проекта в графике: оставим заказчика и адрес
+    const infoBoxHeight = 26;
     const infoBoxWidth = pageWidth - 40;
-    
-    // Тень рамки
-    doc.setFillColor(240, 240, 240);
-    doc.rect(22, infoBoxY + 2, infoBoxWidth, infoBoxHeight, 'F');
-    
-    // Основная рамка
-    doc.setLineWidth(0.5);
-    doc.setDrawColor(100, 100, 100);
-    doc.rect(20, infoBoxY, infoBoxWidth, infoBoxHeight);
+    doc.setFillColor(248, 250, 253);
+    doc.setDrawColor(220, 226, 236);
+    doc.setLineWidth(0.3);
+    (doc as any).roundedRect?.(20, infoBoxY, infoBoxWidth, infoBoxHeight, 2, 2, 'FD') ?? doc.rect(20, infoBoxY, infoBoxWidth, infoBoxHeight, 'FD');
 
     doc.setFontSize(10);
     PdfService.ensureCyrillicSupport(doc);
-    doc.text(`Проект: ${project.name}`, 25, yPosition + 8);
-    doc.text(`Заказчик: ${project.client}`, 25, yPosition + 18);
-    doc.text(`Адрес объекта: ${project.address}`, 25, yPosition + 28);
+    doc.text(`Заказчик: ${project.client}`, 25, yPosition + 8);
+    doc.text(`Адрес объекта: ${project.address}`, 25, yPosition + 18);
 
     yPosition += infoBoxHeight + 20;
 
@@ -887,7 +844,7 @@ class PdfService {
           halign: 'left',
         },
         headStyles: {
-          fillColor: [40, 40, 40],
+          fillColor: PdfService.BRAND_PRIMARY,
           textColor: 255,
           fontStyle: 'bold',
           fontSize: 9,
@@ -897,11 +854,11 @@ class PdfService {
         },
         columnStyles: {
           0: { halign: 'center', cellWidth: 12, font: PdfService.FONT_NAME },
-          1: { cellWidth: 65, font: PdfService.FONT_NAME },
-          2: { halign: 'center', cellWidth: 30, font: PdfService.FONT_NAME },
-          3: { halign: 'center', cellWidth: 30, font: PdfService.FONT_NAME },
-          4: { halign: 'center', cellWidth: 25, font: PdfService.FONT_NAME },
-          5: { halign: 'center', cellWidth: 20, font: PdfService.FONT_NAME },
+          1: { cellWidth: 58, font: PdfService.FONT_NAME },
+          2: { halign: 'center', cellWidth: 28, font: PdfService.FONT_NAME },
+          3: { halign: 'center', cellWidth: 28, font: PdfService.FONT_NAME },
+          4: { halign: 'center', cellWidth: 22, font: PdfService.FONT_NAME },
+          5: { halign: 'center', cellWidth: 22, font: PdfService.FONT_NAME },
         },
         alternateRowStyles: {
           fillColor: [250, 250, 250],
@@ -955,6 +912,143 @@ class PdfService {
     doc.text('(подпись)', pageWidth - 95, rightBoxY + 22);
 
     const fileName = `График_работ_${project.name.replace(/[^a-zA-Z0-9]/g, '_')}_${PdfService.formatDate(new Date().toISOString())}.pdf`;
+    PdfService.addPageNumbers(doc);
+    doc.save(fileName);
+    return Promise.resolve();
+  }
+
+  /**
+   * Финансовый дашборд по проекту (сводный отчет)
+   */
+  static async generateProjectFinancialDashboardPDF(
+    project: Project,
+    estimates: Estimate[],
+    financeEntries: FinanceEntry[],
+    companyProfile: CompanyProfile | null
+  ): Promise<void> {
+    const doc = await PdfService.initializeDoc();
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    let y = await PdfService.drawCompanyHeader(doc, companyProfile, 'ФИНАНСОВЫЙ ОТЧЕТ ПО ПРОЕКТУ', project.name);
+
+    // Подготовка данных
+    const totalEstimatesAmount = estimates
+      .filter(e => e.project_id === project.id)
+      .reduce((sum, estimate) => sum + (estimate.items?.reduce((s, i) => s + (i.quantity * i.price), 0) || 0), 0);
+
+    const projectFinanceEntries = financeEntries.filter(f => f.projectId === project.id);
+    const totalIncome = projectFinanceEntries.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0);
+    const totalExpenses = projectFinanceEntries.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0);
+    const profit = totalIncome - totalExpenses;
+    const profitability = totalExpenses > 0 ? (profit / totalExpenses) * 100 : 0;
+
+    // Карточки сводных показателей
+    const cardWidth = (pageWidth - 48) / 2;
+    const cardHeight = 28;
+    const cardY = y;
+
+    const drawCard = (x: number, label: string, value: string, color: [number, number, number]) => {
+      doc.setFillColor(...PdfService.BRAND_LIGHT);
+      doc.setDrawColor(220, 226, 236);
+      doc.roundedRect(x, cardY, cardWidth, cardHeight, 3, 3, 'FD');
+      doc.setFontSize(9);
+      PdfService.ensureCyrillicSupport(doc);
+      doc.setTextColor(...PdfService.BRAND_DARK);
+      doc.text(label, x + 8, cardY + 10);
+      doc.setFontSize(12);
+      PdfService.ensureCyrillicSupport(doc, 'bold');
+      doc.setTextColor(...color);
+      doc.text(value, x + 8, cardY + 20);
+      doc.setTextColor(...PdfService.BRAND_DARK);
+    };
+
+    drawCard(16, 'Сумма смет', PdfService.formatCurrency(totalEstimatesAmount), PdfService.BRAND_DARK);
+    drawCard(26 + cardWidth, 'Оплачено', PdfService.formatCurrency(totalIncome), [48, 170, 70]);
+
+    const cardY2 = cardY + cardHeight + 10;
+    const profitColor: [number, number, number] = profit >= 0 ? [48, 170, 70] : [200, 60, 60];
+    drawCard(16, 'Расходы', PdfService.formatCurrency(totalExpenses), [200, 60, 60]);
+    drawCard(26 + cardWidth, 'Прибыль / Рентабельность', `${PdfService.formatCurrency(profit)} • ${profitability.toFixed(0)}%`, profitColor);
+
+    y = cardY2 + cardHeight + 16;
+
+    // Расходы по категориям
+    doc.setFontSize(12);
+    PdfService.ensureCyrillicSupport(doc, 'bold');
+    doc.text('Расходы по категориям', 16, y);
+    y += 6;
+
+    const expensesByCategory = projectFinanceEntries
+      .filter(e => e.type === 'expense')
+      .reduce((acc: Record<string, number>, e) => {
+        const cat = e.category || 'other';
+        acc[cat] = (acc[cat] || 0) + e.amount;
+        return acc;
+      }, {});
+
+    const categoryRows = Object.entries(expensesByCategory)
+      .sort((a, b) => b[1] - a[1])
+      .map(([category, amount], idx) => [String(idx + 1), category, PdfService.formatCurrency(amount)]);
+
+    if (categoryRows.length > 0) {
+      autoTable(doc, {
+        head: [['№', 'Категория', 'Сумма']],
+        body: categoryRows,
+        startY: y + 4,
+        styles: { font: PdfService.FONT_NAME, fontSize: 9, cellPadding: 4, lineWidth: 0.2, lineColor: [200, 200, 200] },
+        headStyles: { fillColor: PdfService.BRAND_PRIMARY, textColor: 255, font: PdfService.FONT_NAME, fontStyle: 'bold' },
+        columnStyles: { 0: { halign: 'center', cellWidth: 12 }, 1: { cellWidth: 90 }, 2: { halign: 'right', cellWidth: 30 } },
+        margin: { left: 16, right: 16 },
+      });
+      y = (doc as any).lastAutoTable.finalY + 12;
+    } else {
+      doc.setFontSize(10);
+      PdfService.ensureCyrillicSupport(doc);
+      doc.text('Расходы отсутствуют', 16, y + 10);
+      y += 20;
+    }
+
+    // Последние движения кэшфлоу (до 10 записей)
+    doc.setFontSize(12);
+    PdfService.ensureCyrillicSupport(doc, 'bold');
+    doc.text('Кэшфлоу (последние операции)', 16, y);
+    y += 6;
+
+    const cashRows = projectFinanceEntries
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 10)
+      .map((e, idx) => [
+        String(idx + 1),
+        new Date(e.date).toLocaleDateString('ru-RU'),
+        e.type === 'income' ? 'Приход' : 'Расход',
+        e.description || '-',
+        `${e.type === 'income' ? '+' : '-'}${PdfService.formatCurrency(e.amount)}`
+      ]);
+
+    if (cashRows.length > 0) {
+      autoTable(doc, {
+        head: [['№', 'Дата', 'Тип', 'Описание', 'Сумма']],
+        body: cashRows,
+        startY: y + 4,
+        styles: { font: PdfService.FONT_NAME, fontSize: 9, cellPadding: 4, lineWidth: 0.2, lineColor: [200, 200, 200] },
+        headStyles: { fillColor: PdfService.BRAND_PRIMARY, textColor: 255, font: PdfService.FONT_NAME, fontStyle: 'bold' },
+        columnStyles: {
+          0: { halign: 'center', cellWidth: 12 },
+          1: { halign: 'center', cellWidth: 24 },
+          2: { halign: 'center', cellWidth: 22 },
+          3: { cellWidth: 75 },
+          4: { halign: 'right', cellWidth: 35 }
+        },
+        margin: { left: 16, right: 16 },
+      });
+    } else {
+      doc.setFontSize(10);
+      PdfService.ensureCyrillicSupport(doc);
+      doc.text('Операции не найдены', 16, y + 10);
+    }
+
+    const fileName = `Финансовый_отчет_${project.name.replace(/[^a-zA-Z0-9]/g, '_')}_${PdfService.formatDate(new Date().toISOString())}.pdf`;
+    PdfService.addPageNumbers(doc);
     doc.save(fileName);
     return Promise.resolve();
   }

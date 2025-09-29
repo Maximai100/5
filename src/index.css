@@ -199,9 +199,9 @@ header h1 {
     transition: background-color 0.2s ease;
 }
 
-.projects-list-header .back-btn:hover {
+/* .projects-list-header .back-btn:hover {
     background-color: var(--color-surface-2);
-}
+} */
 
 
 .card {
@@ -302,9 +302,9 @@ body.dark-theme input[type="date"]::-webkit-calendar-picker-indicator {
     flex-direction: column;
     gap: 12px;
 }
-.item-card:active {
+/* .item-card:active {
     opacity: 0.8;
-}
+} */
 
 .item-card.dragging {
     opacity: 0.5;
@@ -317,9 +317,9 @@ body.dark-theme input[type="date"]::-webkit-calendar-picker-indicator {
     touch-action: none; /* for better mobile drag */
     cursor: grab;
 }
-.drag-handle:active {
+/* .drag-handle:active {
     cursor: grabbing;
-}
+} */
 .drag-handle .icon-wrapper {
     width: 20px;
     height: 20px;
@@ -353,9 +353,9 @@ body.dark-theme input[type="date"]::-webkit-calendar-picker-indicator {
     width: 20px;
     height: 20px;
 }
-.remove-btn:hover {
+/* .remove-btn:hover {
     color: var(--danger-color);
-}
+} */
 
 .item-inputs {
     display: flex;
@@ -478,9 +478,9 @@ body.dark-theme input[type="date"]::-webkit-calendar-picker-indicator {
     width: 20px;
     height: 20px;
 }
-.btn:active {
+/* .btn:active {
     transform: scale(0.98);
-}
+} */
 .btn:disabled, button:disabled {
     cursor: not-allowed !important;
     opacity: 0.6;
@@ -517,11 +517,11 @@ body.dark-theme input[type="date"]::-webkit-calendar-picker-indicator {
     margin-top: 12px;
 }
 
-.view-all-btn:hover {
+/* .view-all-btn:hover {
     background-color: rgba(74, 158, 255, 0.1);
     border-color: #66B3FF;
     color: #66B3FF;
-}
+} */
 
 .add-items-container {
     display: grid;
@@ -548,9 +548,9 @@ body.dark-theme .btn-ai {
     width: 100%;
     text-align: center;
 }
-.btn-tertiary:hover {
+/* .btn-tertiary:hover {
     color: var(--danger-color);
-}
+} */
 
 /* Summary styles */
 .summary-details {
@@ -597,10 +597,10 @@ body.dark-theme .btn-ai {
     color: var(--hint-color);
     font-weight: 600;
 }
-.toggle-group button.active {
+/* .toggle-group button.active {
     background-color: var(--primary-color);
     color: var(--primary-text-color);
-}
+} */
 
 .total-container {
     margin-top: 24px;
@@ -832,10 +832,10 @@ body.dark-theme .btn-ai {
     color: var(--hint-color);
     border-bottom: 3px solid transparent;
 }
-.modal-tabs button.active {
+/* .modal-tabs button.active {
     color: var(--link-color);
     border-bottom-color: var(--link-color);
-}
+} */
 
 
 .modal-body {
@@ -893,14 +893,22 @@ body.dark-theme .btn-ai {
     border-radius: var(--border-radius);
     transition: border-color 0.2s, background-color 0.2s;
 }
-.list-item.active {
+/* .list-item.active {
     border-color: var(--primary-color);
     box-shadow: 0 0 8px color-mix(in srgb, var(--primary-color) 30%, transparent);
-}
+} */
 .list-item-info { display: flex; flex-direction: column; gap: 4px; flex-grow: 1; overflow: hidden; }
 .list-item-info strong { white-space: normal; overflow: visible; text-overflow: clip; word-break: break-word; }
 .list-item-info span { font-size: 14px; color: var(--hint-color); }
-.list-item-actions { display: flex; gap: 8px; flex-shrink: 0; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.list-item-actions { 
+    display: flex; 
+    gap: 8px; 
+    flex-shrink: 0; 
+    align-items: center; 
+    flex-wrap: wrap; 
+    justify-content: flex-end; 
+    min-width: 0; /* Позволяет сжиматься */
+}
 .list-item-actions .btn { padding: 8px 12px; font-size: 14px; width: auto; }
 .list-item-actions .btn .icon-wrapper { width: 16px; height: 16px; }
 .list-item-actions .btn-tertiary { padding: 8px; min-width: 36px; border: none; }
@@ -917,6 +925,14 @@ body.dark-theme .btn-ai {
     gap: 8px; 
     flex-wrap: wrap; 
     margin-top: 4px; 
+    min-width: 0; /* Позволяет сжиматься */
+}
+
+.status-badge {
+    white-space: nowrap; /* Не переносить текст */
+    overflow: visible; /* Показывать весь текст */
+    text-overflow: clip; /* Не обрезать */
+    flex-shrink: 0; /* Не сжимать */
 }
 
 .estimate-subtitle {
@@ -1013,9 +1029,9 @@ body.dark-theme .bottom-nav {
     width: 24px;
     height: 24px;
 }
-.bottom-nav button.active {
+/* .bottom-nav button.active {
     color: var(--link-color);
-}
+} */
 
 /* Project List Screen */
 .project-filters {
@@ -1047,10 +1063,10 @@ body.dark-theme .bottom-nav {
     text-overflow: ellipsis;
     min-width: 0;
 }
-.toggle-switch button.active {
+/* .toggle-switch button.active {
     background-color: var(--primary-color);
     color: var(--primary-text-color);
-}
+} */
 .projects-list {
     display: flex;
     flex-direction: column;
@@ -1063,9 +1079,9 @@ body.dark-theme .bottom-nav {
     gap: 4px;
     transition: transform 0.1s;
 }
-.project-card:active {
+/* .project-card:active {
     transform: scale(0.98);
-}
+} */
 .project-card strong {
     font-size: 18px;
     font-weight: 600;
@@ -1117,19 +1133,30 @@ body.dark-theme .bottom-nav {
     user-select: none;
 }
 
-.project-section-header.collapsible-header:hover {
+/* .project-section-header.collapsible-header:hover {
     background-color: var(--color-surface-2);
     border-radius: var(--border-radius) var(--border-radius) 0 0;
-}
+} */
 
 .project-section-header .header-actions {
     display: flex;
     align-items: center;
     gap: 8px;
+    position: relative;
+}
+
+.collapse-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    margin-left: auto;
+    flex-shrink: 0;
 }
 
 .project-section-body.collapsed {
-    display: none;
+    display: none !important;
 }
 
 .collapsed-indicator {
@@ -1178,9 +1205,9 @@ body.dark-theme .bottom-nav {
 .project-items-list .list-item {
     cursor: pointer;
 }
-.project-items-list .list-item:active {
+/* .project-items-list .list-item:active {
     transform: scale(0.98);
-}
+} */
 .list-item > .icon-wrapper {
     flex-shrink: 0;
     color: var(--hint-color);
@@ -1399,9 +1426,9 @@ body.dark-theme .bottom-nav {
     object-fit: cover;
     transition: transform 0.2s ease-in-out;
 }
-.photo-thumbnail:hover img {
+/* .photo-thumbnail:hover img {
     transform: scale(1.05);
-}
+} */
 
 .photo-viewer-overlay {
     background-color: rgba(0,0,0,0.8);
@@ -1821,10 +1848,10 @@ input[type=number] { -moz-appearance: textfield; }
     justify-content: center;
 }
 
-.btn-icon:hover {
+/* .btn-icon:hover {
     color: #fff;
     background-color: var(--color-danger);
-}
+} */
 
 .btn-icon .icon-wrapper {
     width: 20px;
@@ -1903,9 +1930,9 @@ input[type=number] { -moz-appearance: textfield; }
     flex-shrink: 0;
 }
 
-.task-list li button:hover {
+/* .task-list li button:hover {
     color: var(--danger-color);
-}
+} */
 
 .task-list li button .icon-wrapper {
     width: 20px;
@@ -1941,10 +1968,10 @@ input[type=number] { -moz-appearance: textfield; }
     height: 32px;
 }
 
-.expand-btn:hover {
+/* .expand-btn:hover {
     background-color: var(--hover-bg-color);
     color: var(--text-color);
-}
+} */
 
 .expand-btn .icon-wrapper {
     width: 20px;
@@ -1961,9 +1988,10 @@ input[type=number] { -moz-appearance: textfield; }
 /* Стили для карточек с блокнотами в проектах и инвентаре */
 .project-section .expand-btn,
 .card .expand-btn {
-    position: absolute;
-    top: 8px;
-    right: 8px;
+    position: relative;
+    top: auto;
+    right: auto;
+    margin-left: 8px;
 }
 
 /* Убеждаемся, что карточки с блокнотами имеют relative позиционирование */
@@ -2112,9 +2140,9 @@ input[type=number] { -moz-appearance: textfield; }
     justify-content: center;
 }
 
-.project-detail-header .back-btn:hover {
+/* .project-detail-header .back-btn:hover {
     background-color: var(--hover-bg-color);
-}
+} */
 
 .project-detail-header h1 {
     margin: 0;
@@ -2244,9 +2272,9 @@ input[type=number] { -moz-appearance: textfield; }
     opacity: 0.7;
 }
 
-.remove-tag-btn:hover {
+/* .remove-tag-btn:hover {
     opacity: 1;
-}
+} */
 
 .remove-tag-btn .icon-wrapper {
     width: 16px;
@@ -2351,10 +2379,10 @@ input[type=number] { -moz-appearance: textfield; }
     transition: color 0.2s, border-bottom-color 0.2s;
 }
 
-.tab-button.active {
+/* .tab-button.active {
     color: var(--link-color);
     border-bottom-color: var(--link-color);
-}
+} */
 
 .empty-list-message-with-button {
     text-align: center;
@@ -2390,9 +2418,9 @@ input[type=number] { -moz-appearance: textfield; }
     transition: border-color 0.2s;
 }
 
-.form-input-long:focus {
+/* .form-input-long:focus {
     border-color: var(--color-primary);
-}
+} */
 
 .form-input-small {
     width: 100px;
@@ -2406,9 +2434,9 @@ input[type=number] { -moz-appearance: textfield; }
     transition: border-color 0.2s;
 }
 
-.form-input-small:focus {
+/* .form-input-small:focus {
     border-color: var(--color-primary);
-}
+} */
 
 .form-row {
     display: flex;
@@ -2428,9 +2456,9 @@ input[type=number] { -moz-appearance: textfield; }
     transition: background-color 0.2s;
 }
 
-.add-button:hover {
+/* .add-button:hover {
     background-color: var(--color-primary-hover);
-}
+} */
 
 .add-button:disabled {
     background-color: var(--color-surface-2);
@@ -2669,7 +2697,7 @@ input[type=number] { -moz-appearance: textfield; }
     height: 24px;
 }
 
-.task-action-btn:hover {
+/* .task-action-btn:hover {
     background-color: var(--secondary-bg-color);
     color: var(--text-color);
 }
@@ -2677,7 +2705,7 @@ input[type=number] { -moz-appearance: textfield; }
 .task-action-btn.delete:hover {
     background-color: var(--danger-color);
     color: white;
-}
+} */
 
 .task-action-btn svg {
     width: 14px;
@@ -2728,10 +2756,10 @@ input[type=number] { -moz-appearance: textfield; }
     height: 24px;
 }
 
-.remove-file-btn:hover {
+/* .remove-file-btn:hover {
     background-color: var(--danger-color);
     color: white;
-}
+} */
 
 .file-info {
     margin-top: 8px;
@@ -2806,9 +2834,9 @@ input[type=number] { -moz-appearance: textfield; }
     transition: all 0.2s ease;
 }
 
-.remove-photo-btn:hover {
+/* .remove-photo-btn:hover {
     background: var(--danger-color);
-}
+} */
 
 .photo-item textarea {
     width: 100%;
@@ -2822,10 +2850,10 @@ input[type=number] { -moz-appearance: textfield; }
     min-height: 40px;
 }
 
-.photo-item textarea:focus {
+/* .photo-item textarea:focus {
     outline: none;
     border-color: var(--primary-color);
-}
+} */
 
 /* Стили для отображения фотоотчетов в проекте */
 .photo-reports-list {
@@ -2875,9 +2903,9 @@ input[type=number] { -moz-appearance: textfield; }
     transition: transform 0.2s ease;
 }
 
-.photo-report-item .photo-thumbnail:hover {
+/* .photo-report-item .photo-thumbnail:hover {
     transform: scale(1.05);
-}
+} */
 
 .photo-report-item .photo-thumbnail img {
     width: 100%;
@@ -2959,9 +2987,9 @@ input[type=number] { -moz-appearance: textfield; }
     z-index: 10;
 }
 
-.photo-nav-btn:hover {
+/* .photo-nav-btn:hover {
     background: rgba(0, 0, 0, 0.9);
-}
+} */
 
 .photo-nav-btn.prev-btn {
     left: 16px;
@@ -3022,14 +3050,14 @@ input[type=number] { -moz-appearance: textfield; }
     object-fit: cover;
 }
 
-.photo-thumbnail-btn.active {
+/* .photo-thumbnail-btn.active {
     border-color: var(--primary-color);
 }
 
 .photo-thumbnail-btn:hover {
     border-color: var(--primary-color);
     opacity: 0.8;
-}
+} */
 
     /* Стабилизация кружочков приоритета на мобильных */
     .priority-dot {
@@ -3112,7 +3140,7 @@ input[type=number] { -moz-appearance: textfield; }
     height: 40px;
 }
 
-.close-btn:hover {
+/* .close-btn:hover {
     background-color: var(--secondary-bg-color);
     color: var(--text-color);
 }
@@ -3120,4 +3148,4 @@ input[type=number] { -moz-appearance: textfield; }
 .delete-photo-btn:hover {
     background-color: var(--danger-color);
     color: white;
-}
+} */

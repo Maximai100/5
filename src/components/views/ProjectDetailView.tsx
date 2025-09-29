@@ -5,9 +5,11 @@ import { ListItem } from '../ui/ListItem';
 import { TaskDetailsScreen } from './TaskDetailsScreen';
 import TaskDetailsModal from '../modals/TaskDetailsModal';
 import ImageViewerModal from '../modals/ImageViewerModal';
+import { EditPhotoReportModal } from '../modals/EditPhotoReportModal';
 import { formatDueDate, financeCategoryToRu, downloadFileFromUrl, safeShowAlert } from '../../utils';
 import './ProjectDetailView.css';
 import { FinanceEntryModal } from '../modals/FinanceEntryModal';
+import { CollapsibleSection } from '../common/CollapsibleSection';
 
 // Карта приоритетов для задач
 const priorityMap: Record<string, { color: string, name: string }> = {
@@ -77,6 +79,9 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
         title: ''
     });
 
+    // Состояние для редактирования фотоотчета
+    const [editingPhotoReport, setEditingPhotoReport] = useState<PhotoReport | null>(null);
+
     // Обработчики для задач
     const handleTaskSelect = useCallback((task: Task) => {
         setSelectedTask(task);
@@ -120,6 +125,26 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
             title: ''
         });
     }, []);
+
+    // Обработчики для редактирования фотоотчета
+    const handleEditPhotoReport = useCallback((photoReport: PhotoReport) => {
+        setEditingPhotoReport(photoReport);
+    }, []);
+
+    const handleCloseEditPhotoReport = useCallback(() => {
+        setEditingPhotoReport(null);
+    }, []);
+
+    const handleSavePhotoReport = useCallback((updatedPhotoReport: PhotoReport) => {
+        // Обновляем фотоотчет в списке
+        const updatedPhotoReports = photoReports.map(pr => 
+            pr.id === updatedPhotoReport.id ? updatedPhotoReport : pr
+        );
+        
+        // Здесь нужно обновить состояние в родительском компоненте
+        // Пока что просто закрываем модальное окно
+        setEditingPhotoReport(null);
+    }, [photoReports]);
 
     const loadProjectData = projectDataHook?.loadProjectData;
 
@@ -191,8 +216,6 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
     const projectWorkStages = useMemo(() => workStages.filter(ws => ws.projectId === activeProject.id), [workStages, activeProject.id]);
     const projectFinances = useMemo(() => financeEntries.filter(f => f.projectId === activeProject.id), [financeEntries, activeProject.id]);
     
-    const [isFinancesCollapsed, setIsFinancesCollapsed] = useState(false);
-    
     const calculateEstimateTotal = useCallback((estimate: Estimate) => {
         // Проверяем, что estimate.items существует и является массивом
         if (!estimate.items || !Array.isArray(estimate.items)) {
@@ -229,104 +252,91 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                 </div>
             </header>
             <main className="project-detail-main">
-                <div className="card project-section financial-dashboard">
-                    <div className="project-section-header">
-                        <h3>Финансовый дашборд</h3>
-                    </div>
-                    <div className="project-section-body">
-                        <div className="dashboard-grid-final">
-                            <div className="dashboard-column">
-                                <div className="dashboard-item">
-                                    <span className="dashboard-value">{formatCurrency(financials.estimateTotal)}</span>
-                                    <span className="dashboard-label">Сумма смет</span>
-                                </div>
-                                <div className="dashboard-item">
-                                    <span className="dashboard-value payment-value">{formatCurrency(financials.paidTotal)}</span>
-                                    <span className="dashboard-label">Оплачено</span>
-                                </div>
+                <CollapsibleSection title="Финансовый дашборд" className="financial-dashboard">
+                    <div className="dashboard-grid-final">
+                        <div className="dashboard-column">
+                            <div className="dashboard-item">
+                                <span className="dashboard-value">{formatCurrency(financials.estimateTotal)}</span>
+                                <span className="dashboard-label">Сумма смет</span>
                             </div>
-                            <div className="dashboard-column">
-                                <div className="dashboard-item expenses-card">
-                                    <span className="dashboard-value expense-value">{formatCurrency(financials.expensesTotal)}</span>
-                                    <span className="dashboard-label">Расходы</span>
-                                    <div className="dashboard-breakdown">
-                                        {financials.expensesBreakdown.map(item => (
-                                            <div key={item.categoryName} className="breakdown-item">
-                                                <span>{financeCategoryToRu(item.categoryName)}</span>
-                                                <span>{formatCurrency(item.amount)}</span>
-                                            </div>
-                                        ))}
-                                    </div>
+                            <div className="dashboard-item">
+                                <span className="dashboard-value payment-value">{formatCurrency(financials.paidTotal)}</span>
+                                <span className="dashboard-label">Оплачено</span>
+                            </div>
+                        </div>
+                        <div className="dashboard-column">
+                            <div className="dashboard-item expenses-card">
+                                <span className="dashboard-value expense-value">{formatCurrency(financials.expensesTotal)}</span>
+                                <span className="dashboard-label">Расходы</span>
+                                <div className="dashboard-breakdown">
+                                    {financials.expensesBreakdown.map(item => (
+                                        <div key={item.categoryName} className="breakdown-item">
+                                            <span>{financeCategoryToRu(item.categoryName)}</span>
+                                            <span>{formatCurrency(item.amount)}</span>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </div>
-                        <div className="dashboard-item profit-card-final">
-                            <span className="dashboard-label">Прибыль</span>
-                            <div className="profit-details-final">
-                                <span className="dashboard-value profit-value">{formatCurrency(financials.profit)}</span>
-                                <span className="dashboard-label">Рентабельность {`${financials.profitability.toFixed(0)}%`}</span>
-                            </div>
+                    </div>
+                    <div className="dashboard-item profit-card-final">
+                        <span className="dashboard-label">Прибыль</span>
+                        <div className="profit-details-final">
+                            <span className="dashboard-value profit-value">{formatCurrency(financials.profit)}</span>
+                            <span className="dashboard-label">Рентабельность {`${financials.profitability.toFixed(0)}%`}</span>
                         </div>
                     </div>
-                </div>
+                </CollapsibleSection>
 
-                <div className="card project-section">
-                    <div className="project-section-header">
-                        <h3>Кэшфлоу</h3>
+                <CollapsibleSection title="Кэшфлоу">
+                    <div className="project-items-list">
+                        {financials.cashFlowEntries.length > 0 ? (
+                            financials.cashFlowEntries.slice(0, 3).map((entry, index) => (
+                                <ListItem
+                                    key={index}
+                                    icon={entry.type === 'income'
+                                        ? <IconChevronRight style={{transform: 'rotate(-90deg)'}} />
+                                        : <IconChevronRight style={{transform: 'rotate(90deg)'}} />
+                                    }
+                                    iconBgColor={entry.type === 'income' ? 'rgba(48, 209, 88, 0.2)' : 'rgba(255, 69, 58, 0.2)'}
+                                    title={entry.description || (entry.type === 'expense' ? 'Расход' : 'Приход')}
+                                    subtitle={new Date(entry.date).toLocaleString('ru-RU', { day: 'numeric', month: 'short' }).replace('.', '')}
+                                    amountText={`${entry.type === 'income' ? '+' : '-'}${formatCurrency(entry.amount)}`}
+                                    amountColor={entry.type === 'income' ? 'var(--color-success)' : 'var(--color-danger)'}
+                                />
+                            ))
+                        ) : (
+                            <div className="empty-state-container">
+                                <IconTrendingUp />
+                                <p>Движений по счету пока нет.</p>
+                            </div>
+                        )}
+                        {financials.cashFlowEntries.length > 3 && (
+                            <div className="collapsed-indicator">
+                                <span>... и еще {financials.cashFlowEntries.length - 3} транзакций</span>
+                            </div>
+                        )}
                     </div>
-                    <div className="project-section-body">
-                        <div className="project-items-list">
-                            {financials.cashFlowEntries.length > 0 ? (
-                                financials.cashFlowEntries.slice(0, 3).map((entry, index) => (
-                                    <ListItem
-                                        key={index}
-                                        icon={entry.type === 'income'
-                                            ? <IconChevronRight style={{transform: 'rotate(-90deg)'}} />
-                                            : <IconChevronRight style={{transform: 'rotate(90deg)'}} />
-                                        }
-                                        iconBgColor={entry.type === 'income' ? 'rgba(48, 209, 88, 0.2)' : 'rgba(255, 69, 58, 0.2)'}
-                                        title={entry.description || (entry.type === 'expense' ? 'Расход' : 'Приход')}
-                                        subtitle={new Date(entry.date).toLocaleString('ru-RU', { day: 'numeric', month: 'short' }).replace('.', '')}
-                                        amountText={`${entry.type === 'income' ? '+' : '-'}${formatCurrency(entry.amount)}`}
-                                        amountColor={entry.type === 'income' ? 'var(--color-success)' : 'var(--color-danger)'}
-                                    />
-                                ))
-                            ) : (
-                                <div className="empty-state-container">
-                                    <IconTrendingUp />
-                                    <p>Движений по счету пока нет.</p>
-                                </div>
-                            )}
-                            {financials.cashFlowEntries.length > 3 && (
-                                <div className="collapsed-indicator">
-                                    <span>... и еще {financials.cashFlowEntries.length - 3} транзакций</span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-                <div className="card project-section">
-                     <div className="project-section-header">
-                        <h3>Задачи ({tasks.filter(t => !t.isCompleted).length})</h3>
-                        <div className="header-actions">
-                            <button className="add-in-header-btn" onClick={() => appState.openModal('addTask', { id: activeProject.id, name: activeProject.name })}><IconPlus/></button>
-                        </div>
-                    </div>
-                    <div className="project-section-body">
+                </CollapsibleSection>
+                <CollapsibleSection 
+                    title={`Задачи (${tasks.filter(t => !t.isCompleted).length})`}
+                    headerActions={
+                        <button className="add-in-header-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); appState.openModal('addTask', { id: activeProject.id, name: activeProject.name }); }}><IconPlus/></button>
+                    }
+                >
                         <div className="project-items-list">
                             {tasks.filter(t => !t.isCompleted).length > 0 ? (
                                 <div className="task-groups-container">
-                                    {groupedTasks.overdue.length > 0 && (
+                                    {groupedTasks.upcoming.length > 0 && (
                                         <div className="task-group">
-                                            <h4>Просроченные</h4>
                                             <div className="project-items-list">
-                                                {groupedTasks.overdue.slice(0, 3).map(task => (
+                                                {groupedTasks.upcoming.slice(0, 3).map(task => (
                                                     <ListItem
                                                         key={task.id}
                                                         icon={<></>}
                                                         onIconClick={() => handleTaskToggle(task.id)}
-                                                        iconAriaLabel="Переключить выполнено"
                                                         iconChecked={false}
+                                                        iconAriaLabel="Переключить выполнено"
                                                         iconBgColor={priorityMap[task.priority || 'medium']?.color}
                                                         title={task.title}
                                                         subtitle={`${activeProject.name}${task.dueDate ? ' • ' + formatDueDate(task.dueDate) : ''}`}
@@ -358,17 +368,17 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                                             </div>
                                         </div>
                                     )}
-                                    {groupedTasks.upcoming.length > 0 && (
+                                    {groupedTasks.overdue.length > 0 && (
                                         <div className="task-group">
-                                            <h4>Предстоящие</h4>
+                                            <h4>Просроченные</h4>
                                             <div className="project-items-list">
-                                                {groupedTasks.upcoming.slice(0, 3).map(task => (
+                                                {groupedTasks.overdue.slice(0, 3).map(task => (
                                                     <ListItem
                                                         key={task.id}
                                                         icon={<></>}
                                                         onIconClick={() => handleTaskToggle(task.id)}
-                                                        iconChecked={false}
                                                         iconAriaLabel="Переключить выполнено"
+                                                        iconChecked={false}
                                                         iconBgColor={priorityMap[task.priority || 'medium']?.color}
                                                         title={task.title}
                                                         subtitle={`${activeProject.name}${task.dueDate ? ' • ' + formatDueDate(task.dueDate) : ''}`}
@@ -390,17 +400,16 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                                 </button>
                             )}
                         </div>
-                    </div>
-                </div>
-                <div className="card project-section">
-                     <div className="project-section-header">
-                        <h3>Сметы ({projectEstimates.length})</h3>
-                        <div className="header-actions">
-                            <button className="add-in-header-btn" onClick={() => handleAddNewEstimateForProject()}><IconPlus/></button>
-                            <button className="add-in-header-btn" onClick={onOpenEstimatesListModal}><IconFolder/></button>
-                        </div>
-                    </div>
-                    <div className="project-section-body">
+                </CollapsibleSection>
+                <CollapsibleSection 
+                    title={`Сметы (${projectEstimates.length})`}
+                    headerActions={
+                        <>
+                            <button className="add-in-header-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleAddNewEstimateForProject(); }}><IconPlus/></button>
+                            <button className="add-in-header-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onOpenEstimatesListModal({ fromProject: true }); }}><IconFolder/></button>
+                        </>
+                    }
+                >
                         <div className="project-items-list">
                             {projectEstimates.length > 0 ? projectEstimates.map(est => (
                                 <ListItem
@@ -436,18 +445,18 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                                 </div>
                             )}
                         </div>
-                    </div>
-                </div>
-                 <div className="card project-section">
-                    <div className="project-section-header">
-                        <h3>График работ ({projectWorkStages.length})</h3>
-                        <div className="header-actions">
+                </CollapsibleSection>
+                <CollapsibleSection 
+                    title={`График работ (${projectWorkStages.length})`}
+                    headerActions={
+                        <>
                             {projectWorkStages.length > 0 && (
                                 <button 
                                     className="add-in-header-btn export-pdf-btn" 
                                     style={{ color: 'var(--hint-color)', opacity: 0.7 }}
                                     onClick={(e) => {
                                         e.preventDefault(); 
+                                        e.stopPropagation();
                                         onExportWorkSchedulePDF(activeProject, projectWorkStages);
                                     }}
                                     title="Экспорт в PDF"
@@ -463,10 +472,10 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                                     <IconDownload />
                                 </button>
                             )}
-                            <button className="add-in-header-btn" onClick={(e) => {e.preventDefault(); startTransition(() => onOpenWorkStageModal(null));}}><IconPlus/></button>
-                        </div>
-                    </div>
-                    <div className="project-section-body">
+                            <button className="add-in-header-btn" onClick={(e) => {e.preventDefault(); e.stopPropagation(); startTransition(() => onOpenWorkStageModal(null));}}><IconPlus/></button>
+                        </>
+                    }
+                >
                         {projectWorkStages.length > 0 ? (
                             <div className="project-items-list">
                                 {projectWorkStages.map(stage => {
@@ -507,20 +516,17 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                                 <button onClick={(e) => {e.preventDefault(); startTransition(() => onOpenWorkStageModal(null));}} className="btn btn-primary">+ Добавить этап</button>
                             </div>
                         )}
-                    </div>
-                </div>
-                <div className="card project-section finances-section">
-                    <div className="project-section-header collapsible-header" onClick={() => setIsFinancesCollapsed(!isFinancesCollapsed)}>
-                        <h3>Финансы ({projectFinances.length})</h3>
-                        <div className="header-actions">
-                            <button className="add-in-header-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); startTransition(() => onOpenFinanceModal()); }}><IconPlus/></button>
-                            {isFinancesCollapsed ? <IconChevronRight /> : <IconChevronDown />}
-                        </div>
-                    </div>
-                    <div className={`project-section-body ${isFinancesCollapsed ? 'collapsed' : ''}`}>
+                </CollapsibleSection>
+                <CollapsibleSection 
+                    title={`Финансы (${projectFinances.length})`}
+                    className="finances-section"
+                    headerActions={
+                        <button className="add-in-header-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); startTransition(() => onOpenFinanceModal()); }}><IconPlus/></button>
+                    }
+                >
                         {projectFinances.length > 0 ? (
                             <div className="project-items-list">
-                                {(isFinancesCollapsed ? projectFinances.slice(0, 3) : projectFinances).map(f => (
+                                {projectFinances.map(f => (
                                     <ListItem
                                       key={f.id}
                                       icon={f.type === 'income'
@@ -552,11 +558,6 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                                       onClick={() => setEditingFinance(f)}
                                     />
                                 ))}
-                                {isFinancesCollapsed && projectFinances.length > 3 && (
-                                    <div className="collapsed-indicator">
-                                        <span>... и еще {projectFinances.length - 3} транзакций</span>
-                                    </div>
-                                )}
                             </div>
                         ) : (
                             <div className="empty-state-container">
@@ -565,14 +566,13 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                                 <button onClick={(e) => { e.preventDefault(); startTransition(() => onOpenFinanceModal()); }} className="btn btn-primary">+ Добавить транзакцию</button>
                             </div>
                         )}
-                    </div>
-                </div>
-                <div className="card project-section">
-                    <div className="project-section-header">
-                        <h3>Документы ({projectDocuments.length})</h3>
-                        <button className="add-in-header-btn" onClick={(e) => {e.preventDefault(); startTransition(() => onOpenDocumentModal());}}><IconPlus/></button>
-                    </div>
-                    <div className="project-section-body">
+                </CollapsibleSection>
+                <CollapsibleSection 
+                    title={`Документы (${projectDocuments.length})`}
+                    headerActions={
+                        <button className="add-in-header-btn" onClick={(e) => {e.preventDefault(); e.stopPropagation(); startTransition(() => onOpenDocumentModal());}}><IconPlus/></button>
+                    }
+                >
                         {projectDocuments.length > 0 ? (
                              <div className="project-items-list">
                                 {projectDocuments.map(doc => (
@@ -583,7 +583,6 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                                         subtitle={new Date(doc.date).toLocaleDateString('ru-RU')}
                                         actions={
                                             <>
-                                                <button className="btn-icon" aria-label="Открыть" onClick={() => window.open(doc.fileUrl, '_blank', 'noopener,noreferrer')}><IconExternalLink/></button>
                                                 <button
                                                     type="button"
                                                     className="btn-icon"
@@ -605,14 +604,15 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                                 <button onClick={(e) => {e.preventDefault(); startTransition(() => onOpenDocumentModal());}} className="btn btn-primary">+ Загрузить документ</button>
                             </div>
                         )}
-                    </div>
-                </div>
-                <div className="card scratchpad-card">
-                    <div className="card-header">
-                        <h2>Блокнот</h2>
+                </CollapsibleSection>
+                <CollapsibleSection 
+                    title="Блокнот"
+                    className="scratchpad-card"
+                    headerActions={
                         <button 
-                            onClick={() => {
-
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
                                 // appState.navigateToView('scratchpad', { 
                                 //     content: projectNote, 
                                 //     onSave: (content: string) => notesHook.saveNote('project', content, activeProject.id),
@@ -624,29 +624,43 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                         >
                             <IconExternalLink />
                         </button>
-                    </div>
+                    }
+                >
                     <textarea 
                         value={projectNote}
                         onChange={(e) => notesHook.saveNote('project', e.target.value, activeProject.id)}
                         placeholder="Здесь можно хранить любую текстовую информацию по проекту..."
                         style={{ height: '200px', minHeight: '200px' }}
                     />
-                </div>
-                <div className="card project-section">
-                    <div className="project-section-header">
-                        <h3>Фотоотчеты ({projectPhotos.length})</h3>
-                        <button className="add-in-header-btn" onClick={(e) => {e.preventDefault(); startTransition(() => onOpenPhotoReportModal());}}><IconPlus/></button>
-                    </div>
-                    <div className="project-section-body">
+                </CollapsibleSection>
+                <CollapsibleSection 
+                    title={`Фотоотчеты (${projectPhotos.length})`}
+                    headerActions={
+                        <button className="add-in-header-btn" onClick={(e) => {e.preventDefault(); e.stopPropagation(); startTransition(() => onOpenPhotoReportModal());}}><IconPlus/></button>
+                    }
+                >
                         {projectPhotos.length > 0 ? (
                             <div className="photo-reports-list">
                                 {projectPhotos.map(photoReport => (
                                     <div key={photoReport.id} className="photo-report-item">
                                         <div className="photo-report-header">
                                             <h4>{photoReport.title}</h4>
-                                            <span className="photo-report-date">
-                                                {new Date(photoReport.date).toLocaleDateString('ru-RU')}
-                                            </span>
+                                            <div className="photo-report-actions">
+                                                <span className="photo-report-date">
+                                                    {new Date(photoReport.date).toLocaleDateString('ru-RU')}
+                                                </span>
+                                                <button 
+                                                    className="edit-photo-report-btn"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        handleEditPhotoReport(photoReport);
+                                                    }}
+                                                    aria-label="Редактировать фотоотчет"
+                                                >
+                                                    <IconEdit />
+                                                </button>
+                                            </div>
                                         </div>
                                         <div className="photo-grid">
                                             {photoReport.photos.slice(0, 3).map((photo, index) => (
@@ -670,8 +684,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                                 <button onClick={(e) => {e.preventDefault(); startTransition(() => onOpenPhotoReportModal());}} className="btn btn-primary">+ Добавить фото</button>
                             </div>
                         )}
-                    </div>
-                </div>
+                </CollapsibleSection>
             </main>
             {/* Модальное окно просмотра чеков */}
             <ImageViewerModal
@@ -681,6 +694,16 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                 title={receiptViewer.title}
                 alt="Чек"
             />
+
+            {/* Модальное окно редактирования фотоотчета */}
+            {editingPhotoReport && (
+                <EditPhotoReportModal
+                    photoReport={editingPhotoReport}
+                    onClose={handleCloseEditPhotoReport}
+                    onSave={handleSavePhotoReport}
+                    showAlert={safeShowAlert}
+                />
+            )}
             {/* Модальное окно редактирования задачи */}
             {selectedTask && (
                 <TaskDetailsModal

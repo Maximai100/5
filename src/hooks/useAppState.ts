@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, startTransition } from 'react';
 import { ThemeMode } from '../types';
 import { dataService } from '../services/storageService';
 
@@ -28,6 +28,7 @@ export const useAppState = () => {
     // Modal states
     const [showSettingsModal, setShowSettingsModal] = useState(false);
     const [showEstimatesListModal, setShowEstimatesListModal] = useState(false);
+    const [estimatesListModalFromProject, setEstimatesListModalFromProject] = useState(false);
     const [showLibraryModal, setShowLibraryModal] = useState(false);
     const [showNewProjectModal, setShowNewProjectModal] = useState(false);
     const [showFinanceEntryModal, setShowFinanceEntryModal] = useState(false);
@@ -152,75 +153,78 @@ export const useAppState = () => {
     
     // Modal helpers
     const openModal = useCallback((modalName: string, data?: any) => {
-        switch (modalName) {
-            case 'settings':
-                setShowSettingsModal(true);
-                break;
-            case 'estimatesList':
-                setShowEstimatesListModal(true);
-                break;
-            case 'library':
-                setShowLibraryModal(true);
-                break;
-            case 'newProject':
-                setSelectedProject(data || null);
-                setShowNewProjectModal(true);
-                break;
-            case 'financeEntry':
-                setShowFinanceEntryModal(true);
-                break;
-            case 'photoReport':
-                setShowPhotoReportModal(true);
-                break;
-            case 'photoViewer':
-                setSelectedPhoto(data);
-                setShowPhotoViewerModal(true);
-                break;
-            case 'shoppingList':
-                setShowShoppingListModal(true);
-                break;
-            case 'documentUpload':
-                setShowDocumentUploadModal(true);
-                break;
-            case 'workStage':
-                setSelectedWorkStage(data || null);
-                setShowWorkStageModal(true);
-                break;
-            case 'note':
-                setSelectedNote(data || null);
-                setShowNoteModal(true);
-                break;
-            case 'actGeneration':
-                setActTotalAmount(data || 0);
-                setShowActGenerationModal(true);
-                break;
-            case 'aiSuggest':
-                setShowAISuggestModal(true);
-                break;
-            case 'addTool':
-                setSelectedTool(data || null);
-                setShowAddToolModal(true);
-                break;
-            case 'toolDetails':
-                setSelectedTool(data || null);
-                setShowToolDetailsModal(true);
-                break;
-            case 'scratchpad':
-                setScratchpadData(data || null);
-                setShowScratchpadModal(true);
-                break;
-            case 'globalDocument':
-                setShowGlobalDocumentModal(true);
-                break;
-            case 'addTask':
-                setSelectedProject(data || null);
-                setShowAddTaskModal(true);
-                break;
-            case 'editTask':
-                setSelectedTask(data || null);
-                setShowEditTaskModal(true);
-                break;
-        }
+        startTransition(() => {
+            switch (modalName) {
+                case 'settings':
+                    setShowSettingsModal(true);
+                    break;
+                case 'estimatesList':
+                    setShowEstimatesListModal(true);
+                    setEstimatesListModalFromProject(data?.fromProject || false);
+                    break;
+                case 'library':
+                    setShowLibraryModal(true);
+                    break;
+                case 'newProject':
+                    setSelectedProject(data || null);
+                    setShowNewProjectModal(true);
+                    break;
+                case 'financeEntry':
+                    setShowFinanceEntryModal(true);
+                    break;
+                case 'photoReport':
+                    setShowPhotoReportModal(true);
+                    break;
+                case 'photoViewer':
+                    setSelectedPhoto(data);
+                    setShowPhotoViewerModal(true);
+                    break;
+                case 'shoppingList':
+                    setShowShoppingListModal(true);
+                    break;
+                case 'documentUpload':
+                    setShowDocumentUploadModal(true);
+                    break;
+                case 'workStage':
+                    setSelectedWorkStage(data || null);
+                    setShowWorkStageModal(true);
+                    break;
+                case 'note':
+                    setSelectedNote(data || null);
+                    setShowNoteModal(true);
+                    break;
+                case 'actGeneration':
+                    setActTotalAmount(data || 0);
+                    setShowActGenerationModal(true);
+                    break;
+                case 'aiSuggest':
+                    setShowAISuggestModal(true);
+                    break;
+                case 'addTool':
+                    setSelectedTool(data || null);
+                    setShowAddToolModal(true);
+                    break;
+                case 'toolDetails':
+                    setSelectedTool(data || null);
+                    setShowToolDetailsModal(true);
+                    break;
+                case 'scratchpad':
+                    setScratchpadData(data || null);
+                    setShowScratchpadModal(true);
+                    break;
+                case 'globalDocument':
+                    setShowGlobalDocumentModal(true);
+                    break;
+                case 'addTask':
+                    setSelectedProject(data || null);
+                    setShowAddTaskModal(true);
+                    break;
+                case 'editTask':
+                    setSelectedTask(data || null);
+                    setShowEditTaskModal(true);
+                    break;
+            }
+        });
     }, []);
     
     const closeModal = useCallback((modalName: string) => {
@@ -230,6 +234,7 @@ export const useAppState = () => {
                 break;
             case 'estimatesList':
                 setShowEstimatesListModal(false);
+                setEstimatesListModalFromProject(false);
                 break;
             case 'library':
                 setShowLibraryModal(false);
@@ -376,6 +381,7 @@ export const useAppState = () => {
         // Modals
         openModal,
         closeModal,
+        estimatesListModalFromProject,
         
         // Data refresh
         refreshData

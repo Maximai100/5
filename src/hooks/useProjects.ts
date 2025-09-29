@@ -186,12 +186,24 @@ export const useProjects = () => {
                 setDocuments(projectDocuments);
                 setGlobalDocuments(globalDocuments);
                 
+                // Сохраняем в localStorage для кеширования
+                dataService.setDocuments(projectDocuments);
+                dataService.setGlobalDocuments(globalDocuments);
+                
             } else {
                 setDocuments([]);
                 setGlobalDocuments([]);
+                // Сохраняем пустые массивы в localStorage
+                dataService.setDocuments([]);
+                dataService.setGlobalDocuments([]);
             }
         } catch (error) {
             console.error('❌ loadDocumentsFromSupabase: Ошибка при загрузке документов:', error);
+            // При ошибке также сохраняем пустые массивы
+            setDocuments([]);
+            setGlobalDocuments([]);
+            dataService.setDocuments([]);
+            dataService.setGlobalDocuments([]);
         }
     }, []);
 

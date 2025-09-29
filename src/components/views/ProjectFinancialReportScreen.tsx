@@ -1,7 +1,7 @@
 import React from 'react';
-import { Project, FinanceEntry } from '../../types';
+import { Project, FinanceEntry, CompanyProfile } from '../../types';
 import { ListItem } from '../ui/ListItem';
-import { IconTrendingUp, IconCreditCard, IconChevronRight } from '../common/Icon';
+import { IconTrendingUp, IconCreditCard, IconChevronRight, IconDownload } from '../common/Icon';
 import { financeCategoryToRu } from '../../utils';
 import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 
@@ -10,6 +10,7 @@ interface ProjectFinancialReportScreenProps {
   estimates: any[];
   financeEntries: FinanceEntry[];
   formatCurrency: (amount: number) => string;
+  profile: CompanyProfile | null;
   onBack: () => void;
 }
 
@@ -18,6 +19,7 @@ export const ProjectFinancialReportScreen: React.FC<ProjectFinancialReportScreen
   estimates,
   financeEntries,
   formatCurrency,
+  profile,
   onBack
 }) => {
   // Состояние для фильтров по датам
@@ -49,6 +51,20 @@ export const ProjectFinancialReportScreen: React.FC<ProjectFinancialReportScreen
     }
     return true; // Если дата не указана, включаем
   });
+
+  const handleExportDashboardPDF = async () => {
+    try {
+      const PdfServiceInstance = await import('../../services/PdfService');
+      await PdfServiceInstance.default.generateProjectFinancialDashboardPDF(
+        project,
+        projectEstimates,
+        projectFinanceEntries,
+        profile || null
+      );
+    } catch (error) {
+      console.error('Ошибка при генерации PDF финансового отчета:', error);
+    }
+  };
 
   // Рассчитываем финансовые показатели
   const totalEstimatesAmount = projectEstimates.reduce((sum, estimate) => {
@@ -174,6 +190,17 @@ export const ProjectFinancialReportScreen: React.FC<ProjectFinancialReportScreen
         <div className="card project-section financial-dashboard">
           <div className="project-section-header">
             <h3>Финансовый дашборд</h3>
+            <div className="header-actions">
+              <button
+                type="button"
+                className="btn-icon"
+                title="Экспорт в PDF"
+                aria-label="Экспорт в PDF"
+                onClick={handleExportDashboardPDF}
+              >
+                <IconDownload />
+              </button>
+            </div>
           </div>
           <div className="project-section-body">
             <div className="dashboard-grid-final">

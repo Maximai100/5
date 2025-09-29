@@ -426,6 +426,96 @@ export const useFileStorage = () => {
   };
 
   /**
+   * Обновляет фотоотчет в базе данных
+   * @param photoReportId - ID фотоотчета
+   * @param updateData - данные для обновления
+   * @returns обновленная запись
+   */
+  const updatePhotoReport = async (photoReportId: string, updateData: {
+    title?: string;
+    photos?: Array<{
+      url: string;
+      path: string;
+      caption: string;
+    }>;
+    date?: string;
+  }) => {
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError) {
+        console.error('Ошибка получения пользователя:', authError);
+        throw new Error(`Ошибка авторизации: ${authError.message}`);
+      }
+      
+      if (!user) {
+        throw new Error('Пользователь не авторизован');
+      }
+
+      const updateFields: any = {
+        updated_at: new Date().toISOString()
+      };
+
+      if (updateData.title !== undefined) {
+        updateFields.title = updateData.title;
+      }
+      if (updateData.photos !== undefined) {
+        updateFields.photos = updateData.photos;
+      }
+      if (updateData.date !== undefined) {
+        updateFields.date = updateData.date;
+      }
+
+      const { data, error } = await supabase
+        .from('photoreports')
+        .update(updateFields)
+        .eq('id', photoReportId)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Ошибка обновления фотоотчета:', error);
+        throw error;
+      }
+
+      return data as PhotoReportRecord;
+    } catch (error) {
+      console.error('Ошибка при обновлении фотоотчета:', error);
+      throw error;
+    }
+  };
+
+  /**
+   * Удаляет отдельную фотографию из Storage
+   * @param photoPath - путь к фотографии в Storage
+   * @returns результат удаления
+   */
+  const deletePhotoFromStorage = async (photoPath: string) => {
+    try {
+      // Проверяем, является ли это base64 фотографией
+      if (photoPath.startsWith('base64://')) {
+        // Для base64 фотографий ничего не удаляем из Storage
+        return true;
+      }
+
+      const { error } = await supabase.storage
+        .from('photos')
+        .remove([photoPath]);
+
+      if (error) {
+        console.warn('Ошибка удаления фотографии из Storage:', error);
+        throw error;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Ошибка при удалении фотографии из Storage:', error);
+      throw error;
+    }
+  };
+
+  /**
    * Удаляет фотоотчет из базы данных и все связанные файлы из Storage
    * @param photoReportId - ID фотоотчета
    * @returns результат удаления
@@ -481,9 +571,11 @@ export const useFileStorage = () => {
     fileToBase64,
     createDocument,
     createPhotoReport,
+    updatePhotoReport,
     getDocuments,
     getPhotoReports,
     deleteDocument,
     deletePhotoReport,
+    deletePhotoFromStorage,
   };
 };

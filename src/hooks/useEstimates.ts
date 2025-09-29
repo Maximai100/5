@@ -72,33 +72,49 @@ export const useEstimates = (session: Session | null) => {
   const [status, setStatus] = useState<EstimateStatus>('draft');
   const [templates, setTemplates] = useState<EstimateTemplate[]>([]);
 
-  // Загружаем шаблоны из localStorage при инициализации
+  // Загружаем шаблоны из Supabase при инициализации
   useEffect(() => {
-    const savedTemplates = localStorage.getItem('estimateTemplates');
-    if (savedTemplates) {
-      try {
-        const parsedTemplates = JSON.parse(savedTemplates);
-
-        // Проверяем, есть ли старые шаблоны без новых полей
-        const hasOldTemplates = parsedTemplates.some((template: any) => !template.id || !template.name);
-        
-        if (hasOldTemplates) {
-
-          // Очищаем старые шаблоны - пользователь должен будет создать новые
-          localStorage.removeItem('estimateTemplates');
+    const loadTemplates = async () => {
+      if (session?.user) {
+        try {
+          // Добавляем небольшую задержку для предотвращения слишком частых запросов
+          await new Promise(resolve => setTimeout(resolve, 50));
+          
+          const { data, error } = await supabase
+            .from('estimate_templates')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .order('last_modified', { ascending: false });
+          
+          if (error) {
+            console.error('Ошибка загрузки шаблонов:', error);
+            return;
+          }
+          
+          // Преобразуем данные из Supabase в нужный формат
+          const transformedTemplates = (data || []).map((template: any) => ({
+            id: template.id,
+            name: template.name,
+            items: template.items || [],
+            discount: template.discount || 0,
+            discountType: template.discount_type || 'percent',
+            tax: template.tax || 0,
+            lastModified: new Date(template.last_modified).getTime()
+          }));
+          
+          setTemplates(transformedTemplates);
+        } catch (error) {
+          console.error('Критическая ошибка при загрузке шаблонов:', error);
           setTemplates([]);
-          return;
         }
-
-        setTemplates(parsedTemplates);
-      } catch (error) {
-        console.error('Ошибка загрузки шаблонов:', error);
-        // При ошибке очищаем localStorage
-        localStorage.removeItem('estimateTemplates');
+      } else {
+        // Если нет сессии, показываем пустой массив
         setTemplates([]);
       }
-    }
-  }, []);
+    };
+
+    loadTemplates();
+  }, [session?.user]);
 
   // Кеш‑первый показ смет
   useEffect(() => {
@@ -108,10 +124,7 @@ export const useEstimates = (session: Session | null) => {
     }
   }, []);
 
-  // Сохраняем шаблоны в localStorage при изменении
-  useEffect(() => {
-    localStorage.setItem('estimateTemplates', JSON.stringify(templates));
-  }, [templates]);
+  // Удаляем старый код сохранения в localStorage - теперь используем Supabase
 
   const calculation = useMemo((): CalculationResults => {
     const materialsTotal = items
@@ -280,6 +293,82 @@ export const useEstimates = (session: Session | null) => {
       console.log('loadEstimate: загружена смета', estimateId, 'для проекта', projectId);
     } else {
       console.error('loadEstimate: смета не найдена', estimateId);
+    }
+  };
+
+  // Новая функция для копирования сметы в проект
+  const copyEstimateToProject = async (estimateId: string, targetProjectId: string) => {
+    if (!session?.user) return null;
+    
+    const sourceEstimate = allEstimates.find(e => e.id === estimateId);
+    
+    if (!sourceEstimate) {
+      console.error('Смета не найдена:', estimateId);
+      return null;
+    }
+
+    try {
+      // Создаем новую смету на основе существующей
+      const newEstimateData = {
+        user_id: session.user.id,
+        project_id: targetProjectId,
+        client_info: sourceEstimate.clientInfo || sourceEstimate.number || 'Копия сметы',
+        number: generateNewEstimateNumber(allEstimates),
+        date: new Date().toISOString(),
+        status: 'draft',
+        discount: sourceEstimate.discount,
+        discount_type: sourceEstimate.discountType,
+        tax: sourceEstimate.tax
+      };
+
+      // Сохраняем смету в Supabase
+      const { data: newEstimate, error: estimateError } = await supabase
+        .from('estimates')
+        .insert(newEstimateData)
+        .select()
+        .single();
+
+      if (estimateError) {
+        console.error('Ошибка создания сметы:', estimateError);
+        return null;
+      }
+
+      // Копируем позиции сметы
+      if (sourceEstimate.items && sourceEstimate.items.length > 0) {
+        const estimateItems = sourceEstimate.items.map(item => ({
+          estimate_id: newEstimate.id,
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+          unit: item.unit,
+          type: item.type,
+          image_url: item.image
+        }));
+
+        const { error: itemsError } = await supabase
+          .from('estimate_items')
+          .insert(estimateItems);
+
+        if (itemsError) {
+          console.error('Ошибка копирования позиций:', itemsError);
+          // Удаляем созданную смету, если не удалось скопировать позиции
+          await supabase.from('estimates').delete().eq('id', newEstimate.id);
+          return null;
+        }
+      }
+
+      // Добавляем новую смету в локальное состояние без перезагрузки всех смет
+      const newEstimateWithItems = {
+        ...newEstimate,
+        items: sourceEstimate.items || []
+      };
+      
+      setAllEstimates(prev => [...prev, newEstimateWithItems]);
+      
+      return newEstimate.id;
+    } catch (error) {
+      console.error('Критическая ошибка при копировании сметы:', error);
+      return null;
     }
   };
 
@@ -730,34 +819,73 @@ export const useEstimates = (session: Session | null) => {
         setAllEstimates(transformedData);
     },
     templates,
-    deleteTemplate: (templateId: string) => {
-      setTemplates(prev => prev.filter(t => t.id !== templateId));
+    deleteTemplate: async (templateId: string) => {
+      if (!session?.user) return;
+      
+      try {
+        const { error } = await supabase
+          .from('estimate_templates')
+          .delete()
+          .eq('id', templateId)
+          .eq('user_id', session.user.id);
+        
+        if (error) {
+          console.error('Ошибка удаления шаблона:', error);
+          return;
+        }
+        
+        setTemplates(prev => prev.filter(t => t.id !== templateId));
+      } catch (error) {
+        console.error('Критическая ошибка при удалении шаблона:', error);
+      }
     },
-    saveAsTemplate: (estimateId: string) => {
-
+    saveAsTemplate: async (estimateId: string) => {
+      if (!session?.user) return;
+      
       const estimate = allEstimates.find(e => e.id === estimateId);
 
       if (estimate) {
-        const template: EstimateTemplate = {
-          id: crypto.randomUUID(), // Уникальный ID для шаблона
-          name: estimate.clientInfo || estimate.number || 'Без названия', // Название сметы
-          items: estimate.items || [],
-          discount: estimate.discount,
-          discountType: estimate.discountType,
-          tax: estimate.tax,
-          lastModified: Date.now()
-        };
+        try {
+          const templateData = {
+            user_id: session.user.id,
+            name: estimate.clientInfo || estimate.number || 'Без названия',
+            items: estimate.items || [],
+            discount: estimate.discount || 0,
+            discount_type: estimate.discountType || 'percent',
+            tax: estimate.tax || 0
+          };
 
-        setTemplates(prev => {
-          const newTemplates = [template, ...prev];
+          const { data, error } = await supabase
+            .from('estimate_templates')
+            .insert(templateData)
+            .select()
+            .single();
 
-          return newTemplates;
-        });
+          if (error) {
+            console.error('Ошибка сохранения шаблона:', error);
+            return;
+          }
 
+          // Преобразуем данные из Supabase в нужный формат
+          const newTemplate: EstimateTemplate = {
+            id: data.id,
+            name: data.name,
+            items: data.items || [],
+            discount: data.discount || 0,
+            discountType: data.discount_type || 'percent',
+            tax: data.tax || 0,
+            lastModified: new Date(data.last_modified).getTime()
+          };
+
+          setTemplates(prev => [newTemplate, ...prev]);
+        } catch (error) {
+          console.error('Критическая ошибка при сохранении шаблона:', error);
+        }
       } else {
         console.error('🔧 useEstimates: ОШИБКА - смета не найдена для ID:', estimateId);
       }
     },
+    copyEstimateToProject,
     addItemFromLibrary: () => {},
     addItemsFromAI: () => {},
     updateItemImage: () => {},

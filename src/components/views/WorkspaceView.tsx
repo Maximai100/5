@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback } from 'react';
 import { WorkspaceViewProps } from '../../types';
-import { IconPaperclip, IconDownload, IconExternalLink, IconTrash } from '../common/Icon';
+import { IconPaperclip, IconDownload, IconTrash, IconExternalLink } from '../common/Icon';
 import { downloadFileFromUrl, safeShowAlert } from '../../utils';
 
 export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
@@ -67,13 +67,6 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                                     <small>{new Date(doc.date).toLocaleDateString('ru-RU')}</small>
                                 </div>
                                 <div className="doc-actions">
-                                    <button
-                                        className="btn-icon"
-                                        aria-label="Открыть"
-                                        onClick={() => window.open(doc.fileUrl, '_blank', 'noopener,noreferrer')}
-                                    >
-                                        <IconExternalLink />
-                                    </button>
                                     <button
                                         type="button"
                                         className="btn-icon"

@@ -11,9 +11,9 @@
   transition: background-color 0.2s ease-in-out;
 }
 
-.list-item:hover {
+/* .list-item:hover {
   background-color: var(--color-surface-2);
-}
+} */
 
 .list-item-icon-wrapper {
   flex-shrink: 0; /* Иконка не будет сжиматься */
@@ -51,9 +51,9 @@
   max-height: 40px !important;
 }
 
-.list-item-icon-button:hover {
+/* .list-item-icon-button:hover {
   background: var(--color-surface-3, #222);
-}
+} */
 
 .list-item-icon-button.checked {
   background: var(--color-text-primary);
@@ -117,10 +117,10 @@
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-.list-item-delete-button:hover {
+/* .list-item-delete-button:hover {
   background-color: var(--color-danger);
   color: #fff;
-}
+} */
 
 .list-item-delete-button .icon-wrapper {
   width: 24px;

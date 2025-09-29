@@ -563,6 +563,32 @@ const App: React.FC = () => {
         appState.closeModal('estimatesList');
     }, [estimatesHook, appState]);
 
+    // Новая функция для копирования сметы в проект
+    const handleCopyEstimateToProject = useCallback(async (estimateId: string) => {
+        if (!appState.activeProjectId) {
+            safeShowAlert('Ошибка: Не выбран проект для добавления сметы');
+            return;
+        }
+
+        try {
+            const newEstimateId = await estimatesHook.copyEstimateToProject(estimateId, appState.activeProjectId);
+            
+            if (newEstimateId) {
+                safeShowAlert('Смета успешно добавлена в проект!');
+                appState.closeModal('estimatesList');
+                // Обновляем данные проекта
+                if (appState.refreshData) {
+                    appState.refreshData();
+                }
+            } else {
+                safeShowAlert('Не удалось добавить смету в проект');
+            }
+        } catch (error) {
+            console.error('Ошибка при копировании сметы:', error);
+            safeShowAlert('Ошибка при добавлении сметы в проект');
+        }
+    }, [estimatesHook, appState, safeShowAlert]);
+
     const handleNewEstimate = useCallback((template?: { items: any[]; discount: number; discountType: 'percent' | 'fixed'; tax: number; }) => {
         const newEstimate = estimatesHook.createNewEstimate(null);
         
@@ -862,17 +888,57 @@ const App: React.FC = () => {
 
     const handleDeleteDocument = useCallback(async (id: string) => {
         try {
-            await fileStorageHook.deleteDocument(id);
-            projectsHook.deleteDocument(id);
+            safeShowConfirm('Вы уверены, что хотите удалить этот документ?', async (ok) => {
+                if (ok) {
+                    try {
+                        await fileStorageHook.deleteDocument(id);
+                        projectsHook.deleteDocument(id);
+                        safeShowAlert('Документ успешно удален!');
+                    } catch (error) {
+                        console.error('Ошибка при удалении документа:', error);
+                        safeShowAlert('Произошла ошибка при удалении документа.');
+                    }
+                }
+            });
         } catch (error) {
-            console.error('Ошибка при удалении документа:', error);
-            safeShowAlert('Произошла ошибка при удалении документа.');
+            // Fallback: удаляем без подтверждения
+            try {
+                await fileStorageHook.deleteDocument(id);
+                projectsHook.deleteDocument(id);
+                safeShowAlert('Документ удален!');
+            } catch (deleteError) {
+                console.error('Ошибка при удалении документа:', deleteError);
+                safeShowAlert('Произошла ошибка при удалении документа.');
+            }
         }
     }, [projectsHook, fileStorageHook]);
 
-    const handleDeleteGlobalDocument = useCallback((id: string) => {
-        projectsHook.deleteDocument(id);
-    }, [projectsHook]);
+    const handleDeleteGlobalDocument = useCallback(async (id: string) => {
+        try {
+            safeShowConfirm('Вы уверены, что хотите удалить этот документ?', async (ok) => {
+                if (ok) {
+                    try {
+                        await fileStorageHook.deleteDocument(id);
+                        projectsHook.deleteDocument(id);
+                        safeShowAlert('Документ успешно удален!');
+                    } catch (error) {
+                        console.error('Ошибка при удалении документа:', error);
+                        safeShowAlert('Произошла ошибка при удалении документа.');
+                    }
+                }
+            });
+        } catch (error) {
+            // Fallback: удаляем без подтверждения
+            try {
+                await fileStorageHook.deleteDocument(id);
+                projectsHook.deleteDocument(id);
+                safeShowAlert('Документ удален!');
+            } catch (deleteError) {
+                console.error('Ошибка при удалении документа:', deleteError);
+                safeShowAlert('Произошла ошибка при удалении документа.');
+            }
+        }
+    }, [projectsHook, fileStorageHook]);
 
     // Work stage handlers
     const handleAddWorkStage = useCallback(async (stageData: Omit<WorkStage, 'id' | 'projectId' | 'createdAt' | 'updatedAt'>) => {
@@ -899,10 +965,26 @@ const App: React.FC = () => {
 
     const handleDeleteWorkStage = useCallback(async (id: string) => {
         try {
-            await projectDataHook.deleteWorkStage(id);
+            safeShowConfirm('Вы уверены, что хотите удалить этот этап работ?', async (ok) => {
+                if (ok) {
+                    try {
+                        await projectDataHook.deleteWorkStage(id);
+                        safeShowAlert('Этап работ успешно удален!');
+                    } catch (error) {
+                        console.error('Ошибка при удалении этапа работ:', error);
+                        safeShowAlert('Произошла ошибка при удалении этапа работ.');
+                    }
+                }
+            });
         } catch (error) {
-            console.error('Ошибка при удалении этапа работ:', error);
-            safeShowAlert('Произошла ошибка при удалении этапа работ.');
+            // Fallback: удаляем без подтверждения
+            try {
+                await projectDataHook.deleteWorkStage(id);
+                safeShowAlert('Этап работ удален!');
+            } catch (deleteError) {
+                console.error('Ошибка при удалении этапа работ:', deleteError);
+                safeShowAlert('Произошла ошибка при удалении этапа работ.');
+            }
         }
     }, [projectDataHook, safeShowAlert]);
 
@@ -941,7 +1023,28 @@ const App: React.FC = () => {
     }, [tasksHook]);
 
     const handleDeleteTask = useCallback(async (id: string) => {
-        await tasksHook.deleteTask(id);
+        try {
+            safeShowConfirm('Вы уверены, что хотите удалить эту задачу?', async (ok) => {
+                if (ok) {
+                    try {
+                        await tasksHook.deleteTask(id);
+                        safeShowAlert('Задача успешно удалена!');
+                    } catch (error) {
+                        console.error('Ошибка при удалении задачи:', error);
+                        safeShowAlert('Произошла ошибка при удалении задачи.');
+                    }
+                }
+            });
+        } catch (error) {
+            // Fallback: удаляем без подтверждения
+            try {
+                await tasksHook.deleteTask(id);
+                safeShowAlert('Задача удалена!');
+            } catch (deleteError) {
+                console.error('Ошибка при удалении задачи:', deleteError);
+                safeShowAlert('Произошла ошибка при удалении задачи.');
+            }
+        }
     }, [tasksHook]);
 
     // Tool handlers
@@ -965,7 +1068,28 @@ const App: React.FC = () => {
     }, [inventoryHook, safeShowAlert]);
 
     const handleDeleteTool = useCallback((id: string) => {
-        inventoryHook.deleteTool(id);
+        try {
+            safeShowConfirm('Вы уверены, что хотите удалить этот инструмент?', async (ok) => {
+                if (ok) {
+                    try {
+                        await inventoryHook.deleteTool(id);
+                        safeShowAlert('Инструмент успешно удален!');
+                    } catch (error) {
+                        console.error('Ошибка при удалении инструмента:', error);
+                        safeShowAlert('Произошла ошибка при удалении инструмента.');
+                    }
+                }
+            });
+        } catch (error) {
+            // Fallback: удаляем без подтверждения
+            try {
+                inventoryHook.deleteTool(id);
+                safeShowAlert('Инструмент удален!');
+            } catch (deleteError) {
+                console.error('Ошибка при удалении инструмента:', deleteError);
+                safeShowAlert('Произошла ошибка при удалении инструмента.');
+            }
+        }
     }, [inventoryHook]);
 
     // Consumable handlers
@@ -978,7 +1102,28 @@ const App: React.FC = () => {
     }, [inventoryHook]);
 
     const handleDeleteConsumable = useCallback((id: string) => {
-        inventoryHook.deleteConsumable(id);
+        try {
+            safeShowConfirm('Вы уверены, что хотите удалить этот расходник?', async (ok) => {
+                if (ok) {
+                    try {
+                        await inventoryHook.deleteConsumable(id);
+                        safeShowAlert('Расходник успешно удален!');
+                    } catch (error) {
+                        console.error('Ошибка при удалении расходника:', error);
+                        safeShowAlert('Произошла ошибка при удалении расходника.');
+                    }
+                }
+            });
+        } catch (error) {
+            // Fallback: удаляем без подтверждения
+            try {
+                inventoryHook.deleteConsumable(id);
+                safeShowAlert('Расходник удален!');
+            } catch (deleteError) {
+                console.error('Ошибка при удалении расходника:', deleteError);
+                safeShowAlert('Произошла ошибка при удалении расходника.');
+            }
+        }
     }, [inventoryHook]);
 
     // Library handlers
@@ -1268,7 +1413,7 @@ const App: React.FC = () => {
                                 safeShowAlert('Ошибка при генерации PDF графика работ');
                             }
                         }}
-                        onOpenEstimatesListModal={() => appState.openModal('estimatesList')}
+                        onOpenEstimatesListModal={(data) => appState.openModal('estimatesList', data)}
                         notesHook={notesHook}
                         tasksHook={tasksHook}
                         appState={appState}
@@ -1335,6 +1480,7 @@ const App: React.FC = () => {
                         estimates={estimatesHook.estimates}
                         financeEntries={projectDataHook.financeEntries}
                         formatCurrency={formatCurrency}
+                        profile={companyProfileHook.profile}
                         onBack={() => appState.navigateToView('reports')}
                         />
                     </React.Suspense>
@@ -1539,7 +1685,7 @@ const App: React.FC = () => {
                     <button onClick={() => appState.openModal('library')} className="header-btn" aria-label="Справочник">
                         <IconBook />
                     </button>
-                    <button onClick={() => appState.openModal('estimatesList')} className="header-btn" aria-label="Список смет">
+                    <button onClick={() => appState.openModal('estimatesList', { fromProject: false })} className="header-btn" aria-label="Список смет">
                         <IconClipboard />
                     </button>
                     <button onClick={() => appState.navigateToView('reports')} className="header-btn" aria-label="Отчеты">
@@ -1643,23 +1789,27 @@ const App: React.FC = () => {
                     onSaveAsTemplate={estimatesHook.saveAsTemplate}
                     onDeleteTemplate={handleDeleteTemplate}
                     onNewEstimate={handleNewEstimate}
+                    onCopyToProject={appState.estimatesListModalFromProject ? handleCopyEstimateToProject : undefined}
+                    isFromProject={appState.estimatesListModalFromProject}
                     onInputFocus={handleInputFocus}
                 />
             )}
 
             {appState.showLibraryModal && (
-                <LibraryModal
-                    onClose={() => appState.closeModal('library')}
-                    libraryItems={libraryHook.libraryItems}
-                    onAddLibraryItem={libraryHook.addLibraryItem}
-                    onUpdateLibraryItem={libraryHook.updateLibraryItem}
-                    onDeleteLibraryItem={libraryHook.deleteLibraryItem}
-                    onAddItemToEstimate={handleAddItemToEstimate}
-                    formatCurrency={formatCurrency}
-                    onInputFocus={handleInputFocus}
-                    showConfirm={safeShowConfirm}
-                    showAlert={safeShowAlert}
-                />
+                <React.Suspense fallback={<Loader />}>
+                    <LibraryModal
+                        onClose={() => appState.closeModal('library')}
+                        libraryItems={libraryHook.libraryItems}
+                        onAddLibraryItem={libraryHook.addLibraryItem}
+                        onUpdateLibraryItem={libraryHook.updateLibraryItem}
+                        onDeleteLibraryItem={libraryHook.deleteLibraryItem}
+                        onAddItemToEstimate={handleAddItemToEstimate}
+                        formatCurrency={formatCurrency}
+                        onInputFocus={handleInputFocus}
+                        showConfirm={safeShowConfirm}
+                        showAlert={safeShowAlert}
+                    />
+                </React.Suspense>
             )}
 
             {appState.showNewProjectModal && (

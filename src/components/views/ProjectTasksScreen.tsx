@@ -115,11 +115,10 @@ export const ProjectTasksScreen: React.FC<ProjectTasksScreenProps> = ({ tasks, p
                             <p className="empty-list-message">Задач пока нет.</p>
                         ) : (
                             <div className="task-groups-container">
-                                {groupedTasks.overdue.length > 0 && (
+                                {groupedTasks.upcoming.length > 0 && (
                                     <div className="task-group">
-                                        <h4>Просроченные</h4>
                                         <ul className="task-list">
-                                            {groupedTasks.overdue.map(task => (
+                                            {groupedTasks.upcoming.map(task => (
                                                 <ListItem
                                                     key={task.id}
                                                     icon={<></>}
@@ -155,11 +154,11 @@ export const ProjectTasksScreen: React.FC<ProjectTasksScreenProps> = ({ tasks, p
                                         </ul>
                                     </div>
                                 )}
-                                {groupedTasks.upcoming.length > 0 && (
+                                {groupedTasks.overdue.length > 0 && (
                                     <div className="task-group">
-                                        <h4>Предстоящие</h4>
+                                        <h4>Просроченные</h4>
                                         <ul className="task-list">
-                                            {groupedTasks.upcoming.map(task => (
+                                            {groupedTasks.overdue.map(task => (
                                                 <ListItem
                                                     key={task.id}
                                                     icon={<></>}
