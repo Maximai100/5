@@ -423,6 +423,12 @@ const App: React.FC = () => {
         document.title = name && name.length ? `${name} — Прораб360` : 'Прораб360';
     }, [companyProfileHook.profile?.name]);
 
+    // Prefetch heavy/lazy views that часто открываются, чтобы убрать "не с первого раза"
+    useEffect(() => {
+        // Инвентарь подгружаем заранее — это устраняет задержку при первом открытии
+        import('./components/views/InventoryScreen');
+    }, []);
+
     const setFaviconHref = useCallback((href: string, sizes?: string) => {
         let link = document.querySelector<HTMLLinkElement>("link[rel='icon']");
         if (!link) {

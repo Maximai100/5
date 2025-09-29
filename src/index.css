@@ -94,10 +94,15 @@ body {
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
     /* Reserve space for fixed header and bottom nav */
     padding-top: var(--header-h);
     padding-bottom: var(--nav-h);
 }
+
+/* Небольшое выравнивание, чтобы последний блок не оставлял лишний зазор */
+.app-main > *:last-child { margin-bottom: 12px; }
 
 header {
     display: flex;
