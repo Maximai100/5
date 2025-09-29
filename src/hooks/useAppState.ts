@@ -10,6 +10,10 @@ export const useAppState = () => {
         if (savedView === 'estimate' && !dataService.getActiveEstimateId()) {
             return 'workspace';
         }
+        // Если сохраненный вид - projectDetail, но нет активного проекта, переходим к projects
+        if (savedView === 'projectDetail' && !dataService.getActiveProjectId()) {
+            return 'projects';
+        }
         return savedView;
     });
     const [activeProjectId, setActiveProjectId] = useState<string | null>(() => dataService.getActiveProjectId());

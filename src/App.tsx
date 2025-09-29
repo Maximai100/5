@@ -1418,7 +1418,11 @@ const App: React.FC = () => {
                 );
             
             case 'projectDetail':
-                if (!activeProject) return null;
+                if (!activeProject) {
+                    console.log('🔍 App: projectDetail без activeProject, переключаемся на projects');
+                    appState.setActiveView('projects');
+                    return null;
+                }
                 
                 const projectEstimates = estimatesHook.getEstimatesByProject(activeProject.id);
 
