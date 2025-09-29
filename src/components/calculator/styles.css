@@ -35,13 +35,13 @@
 }
 
 .construction-calculator-module.dark-theme {
-    --primary-color: #58a7f8;
+    --primary-color: #3390ec;
     --primary-text-color: #ffffff;
     --bg-color: #1c1c1d;
     --secondary-bg-color: #2c2c2e;
     --text-color: #ffffff;
     --hint-color: #8d8d92;
-    --link-color: #58a7f8;
+    --link-color: #3390ec;
     --border-color: #3a3a3c;
     --danger-color: #ff453a;
     --success-color: #30d158;
