@@ -521,7 +521,17 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                     title={`Финансы (${projectFinances.length})`}
                     className="finances-section"
                     headerActions={
-                        <button className="add-in-header-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); startTransition(() => onOpenFinanceModal()); }}><IconPlus/></button>
+                        <>
+                          <button
+                            className="btn-icon"
+                            title="Экспорт в PDF"
+                            aria-label="Экспорт в PDF"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onExportProjectFinancesPDF && onExportProjectFinancesPDF(activeProject, projectFinances); }}
+                          >
+                            <IconDownload />
+                          </button>
+                          <button className="add-in-header-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); startTransition(() => onOpenFinanceModal()); }}><IconPlus/></button>
+                        </>
                     }
                 >
                         {projectFinances.length > 0 ? (
@@ -613,11 +623,11 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                             onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                // appState.navigateToView('scratchpad', { 
-                                //     content: projectNote, 
-                                //     onSave: (content: string) => notesHook.saveNote('project', content, activeProject.id),
-                                //     previousView: 'projectDetail'
-                                // });
+                                appState.navigateToView('scratchpad', { 
+                                    content: projectNote, 
+                                    onSave: (content: string) => notesHook.saveNote('project', content, activeProject.id),
+                                    previousView: 'projectDetail'
+                                });
                             }} 
                             className="expand-btn" 
                             aria-label="Развернуть блокнот"

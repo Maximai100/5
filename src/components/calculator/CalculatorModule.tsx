@@ -9,6 +9,8 @@ import { useProjectContext } from '../../context/ProjectContext';
 import { supabase } from '../../supabaseClient';
 import { copyToClipboard, tg } from '../../utils';
 import type { Session } from '@supabase/supabase-js';
+import { ProjectSelectionModal } from '../modals/ProjectSelectionModal';
+import { EstimateNameModal } from '../modals/EstimateNameModal';
 
 declare global {
     interface Window {
@@ -640,7 +642,7 @@ const WallpaperCalculator: React.FC<{ perimeter: number, height: number } & Mate
                 "Стоимость": `${totalCost.toFixed(2)} ₽`,
                 "Цена за рулон": `${nPrice.toFixed(2)} ₽`,
                 "Всего рулонов": `${totalRolls} шт.`
-            },
+            } as Record<string, string>,
             showNote: totalRolls > 0,
             text: quantityText + costText
         };
@@ -1600,13 +1602,21 @@ const ResultsPage: React.FC<{
     onOpenSupplierRequest: () => void;
     session: Session | null;
     appState?: any;
-}> = ({ rooms, materialResults, onMaterialResultChange, materials, onSaveMaterial, onOpenSupplierRequest, session, appState }) => {
+    companyProfile?: any;
+    projects?: any[];
+    onOpenProjectSelection?: () => void;
+    onConfirmCreateEstimate?: () => void;
+}> = ({ rooms, materialResults, onMaterialResultChange, materials, onSaveMaterial, onOpenSupplierRequest, session, appState, companyProfile, projects = [], onOpenProjectSelection, onConfirmCreateEstimate }) => {
     
     const [activeFilters, setActiveFilters] = useState<string[]>(['Стены', 'Потолок', 'Пол', 'Произвольные']);
     
     // Получаем доступ к необходимым хукам
     const estimatesHook = useEstimates(session);
     const { activeProjectId } = useProjectContext();
+    
+    // Отладочная информация
+    console.log('ResultsPage: activeProjectId из контекста:', activeProjectId);
+    console.log('ResultsPage: appState.activeProjectId:', appState?.activeProjectId);
 
     const totalCalculations = useMemo(() => {
         // Fix: Explicitly type the accumulator ('totals') to prevent TypeScript from inferring it as `unknown`.
@@ -1629,246 +1639,64 @@ const ResultsPage: React.FC<{
         return Object.values(materialResults).reduce((sum: number, result: MaterialResult | null) => sum + (result?.cost || 0), 0);
     }, [materialResults]);
 
-    // Состояние для модального окна создания сметы
-    const [isCreateEstimateModalOpen, setIsCreateEstimateModalOpen] = useState(false);
-    const [estimateName, setEstimateName] = useState('');
+    // Состояние для модального окна создания сметы (удалено - используем EstimateNameModal)
 
     // Функция-коннектор для создания сметы из результатов калькулятора
     const handleCreateEstimateFromCalc = async () => {
-        // 1. Проверка на наличие проекта
-        if (!activeProjectId) {
-            safeShowAlert("Ошибка: Не выбран проект для добавления сметы. Сначала выберите проект в разделе 'Проекты'.");
-            return;
-        }
-
-        // 2. Проверка наличия данных для создания сметы
+        console.log('handleCreateEstimateFromCalc вызвана');
+        
+        // 1. Проверка наличия данных для создания сметы
         const hasData = Object.values(materialResults).some(result => result && result.quantity.trim());
+        console.log('hasData:', hasData);
+        
         if (!hasData) {
             safeShowAlert("Нет данных для создания сметы. Сначала выполните расчеты материалов.");
             return;
         }
 
-        // 3. Открываем модальное окно для ввода названия
-        setEstimateName(`Смета из калькулятора от ${new Date().toLocaleDateString('ru-RU')}`);
-        setIsCreateEstimateModalOpen(true);
-    };
-
-    // Функция для фактического создания сметы
-    const handleConfirmCreateEstimate = async () => {
-        if (!estimateName.trim()) {
-            safeShowAlert("Введите название сметы.");
-            return;
-        }
-
-        // Преобразование данных калькулятора в формат сметы
-        
-        const newEstimateItems = Object.entries(materialResults)
-            .filter(([_, result]) => result && result.quantity.trim())
-            .flatMap(([name, result]) => {
-                if (name === 'Произвольные материалы' && result?.isGroup && result.items) {
-                    // Для произвольных материалов создаем отдельные позиции
-                    return result.items.map(item => ({
-                        id: crypto.randomUUID(),
-                        name: item.name,
-                        quantity: parseFloat(item.quantity) || 0,
-                        unit: 'шт',
-                        price: item.cost / (parseFloat(item.quantity) || 1),
-                        type: 'material' as const,
-                        image: null
-                    }));
-                } else if (result) {
-                    // Для обычных материалов
-                    
-                    // Извлекаем количество упаковок из строки (например, "330 кг (≈ 11 меш.)" -> 11)
-                    const quantityMatch = result.quantity.match(/≈ (\d+(?:[.,]\d+)?)/);
-                    const quantity = quantityMatch ? parseFloat(quantityMatch[1].replace(',', '.')) : 1;
-                    
-                    // Извлекаем цену за единицу из details
-                    const pricePerUnit = result.details && result.details['Цена за мешок'] 
-                        ? parseFloat(result.details['Цена за мешок'].replace(/[^\d.,]/g, '').replace(',', '.')) || 0
-                        : result.details && result.details['Цена за банку']
-                        ? parseFloat(result.details['Цена за банку'].replace(/[^\d.,]/g, '').replace(',', '.')) || 0
-                        : result.details && result.details['Цена за рулон']
-                        ? parseFloat(result.details['Цена за рулон'].replace(/[^\d.,]/g, '').replace(',', '.')) || 0
-                        : result.details && result.details['Цена за упаковку']
-                        ? parseFloat(result.details['Цена за упаковку'].replace(/[^\d.,]/g, '').replace(',', '.')) || 0
-                        : result.details && result.details['Цена за планку']
-                        ? parseFloat(result.details['Цена за планку'].replace(/[^\d.,]/g, '').replace(',', '.')) || 0
-                        : 0;
-                    
-                    return {
-                        id: crypto.randomUUID(),
-                        name: name,
-                        quantity: quantity, // Используем извлеченное количество
-                        unit: result.unit || 'комплект', // Используем реальную единицу измерения
-                        price: pricePerUnit, // Используем цену за единицу
-                        type: 'material' as const,
-                        image: null
-                    };
-                }
-                return [];
-            })
-            .filter(Boolean);
-
-        // ПРАВИЛЬНЫЙ ПОРЯДОК ДЕЙСТВИЙ
-        try {
-            
-            // 1. Проверяем наличие проекта (это уже должно быть)
-            if (!activeProjectId) {
-                safeShowAlert("Ошибка: Не выбран проект.");
-                return;
-            }
-            
-            // 2. Получаем данные из калькулятора (это уже должно быть)
-            // newEstimateItems уже созданы выше
-            
-            // 3. Создаем ОБЪЕКТ новой сметы
-            const newEstimateObject = estimatesHook.createNewEstimate(activeProjectId);
-            
-            // 4. Дополняем объект данными из формы и калькулятора
-            newEstimateObject.number = `К-${Date.now().toString().slice(-6)}`; // Номер сметы
-            newEstimateObject.items = newEstimateItems; // Позиции из калькулятора
-            newEstimateObject.clientInfo = estimateName.trim(); // Название из модального окна
-            
-            // 5. ---- КЛЮЧЕВОЙ ШАГ ----
-            // Используем новый метод прямого сохранения сметы
-            
-            // 6. Сохраняем смету напрямую, не завися от currentEstimate
-            try {
-                await estimatesHook.saveEstimateDirectly(newEstimateObject);
-                
-                // Принудительно обновляем данные в App.tsx
-                await estimatesHook.fetchAllEstimates();
-                
-                // Дополнительно обновляем данные через appState если доступно
-                if (appState && appState.refreshData) {
-                    appState.refreshData();
-                }
-                
-                // Закрываем модальное окно
-                setIsCreateEstimateModalOpen(false);
-                setEstimateName('');
-                
-                safeShowAlert('Смета успешно создана!');
-                
-                // Перенаправление пользователя на страницу проекта
-                if (appState) {
-                    appState.navigateToProject(activeProjectId);
-                }
-            } catch (saveError) {
-                console.error("Ошибка при сохранении сметы:", saveError);
-                safeShowAlert("Не удалось сохранить смету. Попробуйте еще раз.");
-            }
-            
-        } catch (error) {
-            console.error("Ошибка при создании сметы:", error);
-            safeShowAlert("Не удалось создать смету. Попробуйте еще раз.");
+        // 2. Открываем модальное окно выбора проекта
+        console.log('onOpenProjectSelection:', onOpenProjectSelection);
+        if (onOpenProjectSelection) {
+            console.log('Вызываем onOpenProjectSelection');
+            onOpenProjectSelection();
+        } else {
+            console.log('onOpenProjectSelection не передана');
+            // Если нет функции выбора проекта, открываем модальное окно ввода названия
+            // setIsEstimateNameModalOpen(true); // TODO: добавить состояние для модального окна
         }
     };
+
+
 
 
     const handleExportPdf = async () => {
         try {
-            const doc = new jsPDF();
-            
-            // Загружаем шрифты для поддержки кириллицы
-            const loadFontBase64 = async (url: string): Promise<string> => {
-                const res = await fetch(url);
-                if (!res.ok) {
-                    throw new Error(`Failed to load font at ${url}: ${res.status} ${res.statusText}`);
-                }
-                const buffer = await res.arrayBuffer();
-                const bytes = new Uint8Array(buffer);
-                const chunkSize = 0x8000;
-                let binary = '';
-                for (let i = 0; i < bytes.length; i += chunkSize) {
-                    const sub = bytes.subarray(i, i + chunkSize);
-                    binary += String.fromCharCode.apply(null, Array.from(sub) as unknown as number[]);
-                }
-                return btoa(binary);
-            };
+            const PdfServiceInstance = await import('../../services/PdfService');
 
-            // Загружаем шрифты Roboto
-            const base = (import.meta as any).env?.BASE_URL ?? '/';
-            const prefix = base.endsWith('/') ? base : base + '/';
-            
-            const [regularFontRes, boldFontRes] = await Promise.allSettled([
-                loadFontBase64(`${prefix}fonts/Roboto-Regular.ttf`),
-                loadFontBase64(`${prefix}fonts/Roboto-Bold.ttf`)
-            ]);
-
-            // Добавляем шрифты в документ
-            if (regularFontRes.status === 'fulfilled') {
-                doc.addFileToVFS('Roboto-Regular.ttf', regularFontRes.value);
-                doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
-            }
-            if (boldFontRes.status === 'fulfilled') {
-                doc.addFileToVFS('Roboto-Bold.ttf', boldFontRes.value);
-                doc.addFont('Roboto-Bold.ttf', 'Roboto', 'bold');
-            }
-
-            // Устанавливаем шрифт Roboto
-            doc.setFont('Roboto', 'bold');
-            doc.setFontSize(16);
-            doc.text("Смета материалов", 14, 22);
-            
-            doc.setFont('Roboto', 'normal');
-            doc.setFontSize(11);
-            doc.setTextColor(100);
-            doc.text(`Дата: ${new Date().toLocaleDateString('ru-RU')}`, 14, 30);
-            
-            const summary = [
-                `Общая площадь пола: ${totalCalculations.totalFloorArea.toFixed(2)} м²`,
-                `Общая площадь стен: ${totalCalculations.totalNetWallArea.toFixed(2)} м²`,
-                `Общий периметр: ${totalCalculations.totalPerimeter.toFixed(2)} м`,
-            ];
-            doc.text(summary, 14, 40);
-
-            doc.setFont('Roboto', 'bold');
-            doc.setFontSize(16);
-            doc.text(`Итоговая стоимость: ${totalCost.toFixed(2)} ₽`, 14, 60);
-
-            const tableColumn = ["Материал", "Количество", "Стоимость"];
-            const tableRows: (string | number)[][] = [];
-
+            // Собираем строки таблицы
+            const rows: { name: string; quantity: string; cost: number | null }[] = [];
             MATERIAL_ORDER.forEach(name => {
                 const result = materialResults[name];
-                 if (name === 'Произвольные материалы' && result?.isGroup && result.items) {
+                if (name === 'Произвольные материалы' && result?.isGroup && result.items) {
                     result.items.forEach(item => {
-                        tableRows.push([item.name, item.quantity, item.cost > 0 ? `${item.cost.toFixed(2)} ₽` : '-']);
+                        rows.push({ name: item.name, quantity: item.quantity, cost: item.cost > 0 ? item.cost : null });
                     });
                 } else if (result && result.quantity) {
-                    const materialData = [
-                        name,
-                        result.quantity.replace(/\n/g, ', '), // Flatten multi-line quantities
-                        result.cost > 0 ? `${result.cost.toFixed(2)} ₽` : '-'
-                    ];
-                    tableRows.push(materialData);
+                    rows.push({ name, quantity: result.quantity.replace(/\n/g, ', '), cost: result.cost > 0 ? result.cost : null });
                 }
             });
 
-            (doc as any).autoTable({
-                head: [tableColumn],
-                body: tableRows,
-                startY: 70,
-                theme: 'striped',
-                headStyles: { 
-                    fillColor: [51, 144, 236],
-                    font: 'Roboto',
-                    fontStyle: 'bold'
+            await PdfServiceInstance.default.generateMaterialsEstimatePDF(
+                {
+                    floorArea: totalCalculations.totalFloorArea,
+                    wallArea: totalCalculations.totalNetWallArea,
+                    perimeter: totalCalculations.totalPerimeter,
+                    totalCost,
+                    date: new Date().toLocaleDateString('ru-RU')
                 },
-                styles: {
-                    font: 'Roboto',
-                    fontStyle: 'normal'
-                },
-                columnStyles: {
-                    0: { font: 'Roboto' },
-                    1: { font: 'Roboto' },
-                    2: { font: 'Roboto' }
-                }
-            });
-
-            doc.save(`Смета_материалов_${new Date().toISOString().slice(0, 10)}.pdf`);
+                rows,
+                companyProfile || null
+            );
         } catch (error) {
             console.error('Ошибка при экспорте PDF:', error);
             safeShowAlert('Ошибка при экспорте PDF. Попробуйте еще раз.');
@@ -1957,9 +1785,11 @@ const ResultsPage: React.FC<{
                 <button className="btn btn-secondary" onClick={onOpenSupplierRequest}><IconClipboard/> Заявка поставщику</button>
                 <button 
                     className="btn btn-primary" 
-                    onClick={handleCreateEstimateFromCalc}
-                    disabled={!activeProjectId}
-                    title={!activeProjectId ? "Сначала выберите проект в разделе 'Проекты'" : "Создать смету в текущем проекте"}
+                    onClick={() => {
+                        console.log('Кнопка нажата!');
+                        handleCreateEstimateFromCalc();
+                    }}
+                    title="Создать смету в проекте"
                 >
                     <IconSave/> Создать смету в проекте
                 </button>
@@ -1977,51 +1807,7 @@ const ResultsPage: React.FC<{
                 </div>
             ))}
 
-            {/* Модальное окно для создания сметы */}
-            <Modal 
-                isOpen={isCreateEstimateModalOpen} 
-                onClose={() => setIsCreateEstimateModalOpen(false)} 
-                title="Создание сметы"
-            >
-                <div style={{ padding: 'var(--spacing-m)' }}>
-                    <div style={{ marginBottom: 'var(--spacing-m)' }}>
-                        <label style={{ display: 'block', marginBottom: 'var(--spacing-s)', fontWeight: 'bold' }}>
-                            Название сметы:
-                        </label>
-                        <input
-                            type="text"
-                            value={estimateName}
-                            onChange={(e) => setEstimateName(e.target.value)}
-                            placeholder="Введите название сметы"
-                            style={{
-                                width: '100%',
-                                padding: 'var(--spacing-s)',
-                                border: '1px solid var(--border-color)',
-                                borderRadius: 'var(--border-radius)',
-                                backgroundColor: 'var(--bg-color)',
-                                color: 'var(--text-color)',
-                                fontSize: '14px'
-                            }}
-                            autoFocus
-                        />
-                    </div>
-                    <div style={{ display: 'flex', gap: 'var(--spacing-s)', justifyContent: 'flex-end' }}>
-                        <button 
-                            className="btn btn-secondary" 
-                            onClick={() => setIsCreateEstimateModalOpen(false)}
-                        >
-                            Отмена
-                        </button>
-                        <button 
-                            className="btn btn-primary" 
-                            onClick={handleConfirmCreateEstimate}
-                            disabled={!estimateName.trim()}
-                        >
-                            Создать смету
-                        </button>
-                    </div>
-                </div>
-            </Modal>
+            {/* Модальное окно для создания сметы удалено - используем EstimateNameModal */}
         </div>
     );
 };
@@ -2045,11 +1831,15 @@ const CalculatorView: React.FC<{
     onOpenSupplierRequest: () => void;
     session: Session | null;
     appState?: any;
+    companyProfile?: any;
+    projects?: any[];
+    onOpenProjectSelection?: () => void;
+    onConfirmCreateEstimate?: () => void;
 }> = ({ 
     rooms, setRooms, step, setStep, activeRoomId, setActiveRoomId,
     handleInputFocus, 
     onSaveEstimate, onLoadEstimate, onOpenLibrary, materials, onSaveMaterial, 
-    materialResults, onMaterialResultChange, onOpenSupplierRequest, session, appState
+    materialResults, onMaterialResultChange, onOpenSupplierRequest, session, appState, companyProfile, projects, onOpenProjectSelection, onConfirmCreateEstimate
 }) => {
     const [errors, setErrors] = useState<Record<string, Record<string, string>>>({});
     
@@ -2201,6 +1991,10 @@ const CalculatorView: React.FC<{
                         onOpenSupplierRequest={onOpenSupplierRequest}
                         session={session}
                         appState={appState}
+                        companyProfile={companyProfile}
+                        projects={projects}
+                        onOpenProjectSelection={onOpenProjectSelection}
+                        onConfirmCreateEstimate={onConfirmCreateEstimate}
                     />
                 )}
             </main>
@@ -2600,15 +2394,165 @@ interface CalculatorModuleProps {
     // by the parent application via a wrapper CSS class.
     appState?: any;
     companyProfile?: any;
+    projects?: any[];
 }
 
-export const CalculatorModule: React.FC<CalculatorModuleProps> = ({ appState, companyProfile }) => {
+export const CalculatorModule: React.FC<CalculatorModuleProps> = ({ appState, companyProfile, projects = [] }) => {
     useEffect(() => {
         document.documentElement.lang = 'ru';
     }, []);
 
+    // Состояние для модального окна выбора проекта
+    const [isProjectSelectionModalOpen, setIsProjectSelectionModalOpen] = useState(false);
+    const [isEstimateNameModalOpen, setIsEstimateNameModalOpen] = useState(false);
+    const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+    const [selectedProjectName, setSelectedProjectName] = useState<string>('');
+    const [estimateName, setEstimateName] = useState('');
+
+    // Обработчик выбора проекта
+    const handleProjectSelect = (project: any) => {
+        setSelectedProjectId(project.id);
+        setSelectedProjectName(project.name);
+        setEstimateName(`Смета из калькулятора от ${new Date().toLocaleDateString('ru-RU')}`);
+        setIsProjectSelectionModalOpen(false);
+        setIsEstimateNameModalOpen(true);
+        
+        // Устанавливаем активный проект в контексте
+        if (appState && appState.setActiveProjectId) {
+            appState.setActiveProjectId(project.id);
+        }
+    };
+
+    // Функция для открытия модального окна выбора проекта
+    const handleOpenProjectSelection = () => {
+        console.log('handleOpenProjectSelection вызвана');
+        console.log('projects:', projects);
+        console.log('isProjectSelectionModalOpen до:', isProjectSelectionModalOpen);
+        setIsProjectSelectionModalOpen(true);
+        console.log('setIsProjectSelectionModalOpen(true) вызвана');
+        setTimeout(() => {
+            console.log('isProjectSelectionModalOpen после:', isProjectSelectionModalOpen);
+        }, 100);
+    };
+
+    // Функция для создания сметы из калькулятора
+    const handleConfirmCreateEstimate = async (name: string) => {
+        if (!name.trim()) {
+            safeShowAlert("Введите название сметы.");
+            return;
+        }
+
+        // Преобразование данных калькулятора в формат сметы
+        const newEstimateItems = Object.entries(materialResults)
+            .filter(([_, result]) => result && result.quantity.trim())
+            .flatMap(([name, result]) => {
+                if (name === 'Произвольные материалы' && result?.isGroup && result.items) {
+                    // Для произвольных материалов создаем отдельные позиции
+                    return result.items.map(item => ({
+                        id: crypto.randomUUID(),
+                        name: item.name,
+                        quantity: parseFloat(item.quantity) || 0,
+                        unit: 'шт',
+                        price: item.cost / (parseFloat(item.quantity) || 1),
+                        type: 'material' as const,
+                        image: null
+                    }));
+                } else if (result) {
+                    // Для обычных материалов
+                    
+                    // Извлекаем количество упаковок из строки (например, "330 кг (≈ 11 меш.)" -> 11)
+                    const quantityMatch = result.quantity.match(/≈ (\d+(?:[.,]\d+)?)/);
+                    const quantity = quantityMatch ? parseFloat(quantityMatch[1].replace(',', '.')) : 1;
+                    
+                    // Извлекаем цену за единицу из details
+                    const pricePerUnit = result.details && result.details['Цена за мешок'] 
+                        ? parseFloat(result.details['Цена за мешок'].replace(/[^\d.,]/g, '').replace(',', '.')) || 0
+                        : result.details && result.details['Цена за банку']
+                        ? parseFloat(result.details['Цена за банку'].replace(/[^\d.,]/g, '').replace(',', '.')) || 0
+                        : result.details && result.details['Цена за рулон']
+                        ? parseFloat(result.details['Цена за рулон'].replace(/[^\d.,]/g, '').replace(',', '.')) || 0
+                        : result.details && result.details['Цена за упаковку']
+                        ? parseFloat(result.details['Цена за упаковку'].replace(/[^\d.,]/g, '').replace(',', '.')) || 0
+                        : result.details && result.details['Цена за планку']
+                        ? parseFloat(result.details['Цена за планку'].replace(/[^\d.,]/g, '').replace(',', '.')) || 0
+                        : 0;
+                    
+                    return {
+                        id: crypto.randomUUID(),
+                        name: name,
+                        quantity: quantity, // Используем извлеченное количество
+                        unit: result.unit || 'комплект', // Используем реальную единицу измерения
+                        price: pricePerUnit, // Используем цену за единицу
+                        type: 'material' as const,
+                        image: null
+                    };
+                }
+                return [];
+            })
+            .filter(Boolean);
+
+        // ПРАВИЛЬНЫЙ ПОРЯДОК ДЕЙСТВИЙ
+        try {
+            
+            // 1. Проверяем наличие проекта (используем appState.activeProjectId)
+            const currentProjectId = appState?.activeProjectId || selectedProjectId;
+            console.log('currentProjectId:', currentProjectId);
+            if (!currentProjectId) {
+                safeShowAlert("Ошибка: Не выбран проект.");
+                return;
+            }
+            
+            // 2. Получаем данные из калькулятора (это уже должно быть)
+            // newEstimateItems уже созданы выше
+            console.log('newEstimateItems:', newEstimateItems);
+            
+            // 3. Создаем ОБЪЕКТ новой сметы
+            const newEstimateObject = estimatesHook.createNewEstimate(currentProjectId);
+            console.log('newEstimateObject:', newEstimateObject);
+            
+            // 4. Дополняем объект данными из формы и калькулятора
+            newEstimateObject.number = `К-${Date.now().toString().slice(-6)}`; // Номер сметы
+            newEstimateObject.items = newEstimateItems; // Позиции из калькулятора
+            newEstimateObject.clientInfo = name; // Название из модального окна
+            console.log('newEstimateObject после дополнения:', newEstimateObject);
+            
+            // 5. ---- КЛЮЧЕВОЙ ШАГ ----
+            // Используем новый метод прямого сохранения сметы
+            
+            // 6. Сохраняем смету напрямую, не завися от currentEstimate
+            try {
+                console.log('Сохраняем смету с project_id:', newEstimateObject.project_id);
+                await estimatesHook.saveEstimateDirectly(newEstimateObject);
+                console.log('Смета сохранена успешно');
+                
+                // Закрываем модальное окно
+                setIsEstimateNameModalOpen(false);
+                
+                safeShowAlert(`Смета "${name}" успешно создана!`);
+                
+                // Перенаправление пользователя на страницу проекта
+                if (appState) {
+                    console.log('Переходим к проекту:', currentProjectId);
+                    appState.navigateToProject(currentProjectId);
+                }
+            } catch (saveError) {
+                console.error("Ошибка при сохранении сметы:", saveError);
+                safeShowAlert("Не удалось сохранить смету. Попробуйте еще раз.");
+            }
+            
+        } catch (error) {
+            console.error("Ошибка при создании сметы:", error);
+            safeShowAlert("Не удалось создать смету. Попробуйте еще раз.");
+        }
+    };
+
+    // Функция для создания сметы удалена - используем handleConfirmCreateEstimate
+
     // Получаем сессию пользователя
     const [session, setSession] = useState<Session | null>(null);
+    
+    // Получаем доступ к хуку смет
+    const estimatesHook = useEstimates(session);
     
     useEffect(() => {
         const getSession = async () => {
@@ -2687,16 +2631,61 @@ export const CalculatorModule: React.FC<CalculatorModuleProps> = ({ appState, co
 
     // Load saved data on initial mount
     useEffect(() => {
-        try {
-            const estimatesData = localStorage.getItem('savedEstimates');
-            if (estimatesData) setSavedEstimates(JSON.parse(estimatesData));
+        const loadSavedData = async () => {
+            try {
+                // Загружаем из localStorage
+                const estimatesData = localStorage.getItem('savedEstimates');
+                if (estimatesData) setSavedEstimates(JSON.parse(estimatesData));
 
-            const materialsData = localStorage.getItem('savedMaterials');
-            if (materialsData) setSavedMaterials(JSON.parse(materialsData));
-        } catch (error) {
-            console.error("Failed to load data from storage:", error);
-        }
+                const materialsData = localStorage.getItem('savedMaterials');
+                if (materialsData) setSavedMaterials(JSON.parse(materialsData));
+                
+                // Загружаем из Supabase, если есть сессия
+                if (session?.user) {
+                    try {
+                        const { data, error } = await supabase
+                            .from('calculations')
+                            .select('*')
+                            .eq('user_id', session.user.id)
+                            .order('created_at', { ascending: false });
+                        
+                        if (error) {
+                            console.error("Ошибка загрузки расчетов из Supabase:", error);
+                        } else if (data && data.length > 0) {
+                            // Преобразуем данные из Supabase в формат SavedEstimate
+                            const supabaseEstimates: SavedEstimate[] = data.map(calc => ({
+                                id: Date.now() + Math.random(), // Генерируем уникальный ID
+                                name: calc.name,
+                                date: calc.created_at,
+                                rooms: calc.calculation_data?.rooms || []
+                            }));
+                            
+                            // Объединяем с данными из localStorage
+                            const localEstimates = estimatesData ? JSON.parse(estimatesData) : [];
+                            const allEstimates = [...supabaseEstimates, ...localEstimates];
+                            
+                            // Удаляем дубликаты по названию и дате
+                            const uniqueEstimates = allEstimates.filter((estimate, index, self) => 
+                                index === self.findIndex(e => e.name === estimate.name && e.date === estimate.date)
+                            );
+                            
+                            setSavedEstimates(uniqueEstimates);
+                            localStorage.setItem('savedEstimates', JSON.stringify(uniqueEstimates));
+                        }
+                    } catch (supabaseError) {
+                        console.error("Ошибка при загрузке из Supabase:", supabaseError);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to load data from storage:", error);
+            }
+        };
+        
+        loadSavedData();
+    }, [session?.user]);
 
+    // Load autosaved data
+    useEffect(() => {
         try {
             const autosavedData = localStorage.getItem('autosavedRooms');
             if (autosavedData) {
@@ -2746,14 +2735,49 @@ export const CalculatorModule: React.FC<CalculatorModuleProps> = ({ appState, co
         setLoadModalOpen(true);
     };
 
-    const handleSaveEstimate = (name: string) => {
+    const handleSaveEstimate = async (name: string) => {
         const newEstimate: SavedEstimate = { id: Date.now(), name, date: new Date().toISOString(), rooms };
         const updatedEstimates = [...savedEstimates, newEstimate];
         
         try {
+            // Сохраняем в localStorage
             localStorage.setItem('savedEstimates', JSON.stringify(updatedEstimates));
             localStorage.removeItem('autosavedRooms'); // Clear autosave on successful formal save
             setSavedEstimates(updatedEstimates);
+            
+            // Сохраняем в Supabase, если есть сессия
+            if (session?.user) {
+                try {
+                    const calculationData = {
+                        name: name,
+                        calculation_data: {
+                            date: new Date().toISOString(),
+                            version: "1.0",
+                            rooms: rooms,
+                            materialResults: materialResults
+                        }
+                    };
+                    
+                    const { error } = await supabase
+                        .from('calculations')
+                        .insert({
+                            user_id: session.user.id,
+                            name: name,
+                            calculation_data: calculationData.calculation_data
+                        });
+                    
+                    if (error) {
+                        console.error("Ошибка сохранения в Supabase:", error);
+                        // Не показываем ошибку пользователю, так как localStorage сохранение прошло успешно
+                    } else {
+                        console.log("Расчет успешно сохранен в Supabase");
+                    }
+                } catch (supabaseError) {
+                    console.error("Ошибка при сохранении в Supabase:", supabaseError);
+                    // Не показываем ошибку пользователю, так как localStorage сохранение прошло успешно
+                }
+            }
+            
             setSaveModalOpen(false);
             tg?.HapticFeedback.notificationOccurred('success');
             safeShowAlert('Расчет успешно сохранен!');
@@ -2821,6 +2845,13 @@ export const CalculatorModule: React.FC<CalculatorModuleProps> = ({ appState, co
                     onOpenSupplierRequest={() => setSupplierRequestModalOpen(true)}
                     session={session}
                     appState={appState}
+                    companyProfile={companyProfile}
+                    projects={projects}
+                    onOpenProjectSelection={handleOpenProjectSelection}
+                    onConfirmCreateEstimate={() => {
+                        // Открываем модальное окно для ввода названия сметы
+                        setIsEstimateNameModalOpen(true);
+                    }}
                 />
             </div>
             <SaveEstimateModal isOpen={isSaveModalOpen} onClose={() => setSaveModalOpen(false)} onSave={handleSaveEstimate} />
@@ -2843,6 +2874,22 @@ export const CalculatorModule: React.FC<CalculatorModuleProps> = ({ appState, co
                 onClose={() => setSupplierRequestModalOpen(false)}
                 materialResults={materialResults}
                 companyProfile={companyProfile}
+            />
+            {/* Модальное окно выбора проекта */}
+            <ProjectSelectionModal
+                isOpen={isProjectSelectionModalOpen}
+                projects={projects}
+                onSelectProject={handleProjectSelect}
+                onClose={() => setIsProjectSelectionModalOpen(false)}
+                title="Выберите проект для создания сметы"
+            />
+
+            {/* Модальное окно ввода названия сметы */}
+            <EstimateNameModal
+                isOpen={isEstimateNameModalOpen}
+                onClose={() => setIsEstimateNameModalOpen(false)}
+                onConfirm={handleConfirmCreateEstimate}
+                initialName={estimateName}
             />
         </>
     );

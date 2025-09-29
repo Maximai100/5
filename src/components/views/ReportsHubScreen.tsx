@@ -55,30 +55,28 @@ export const ReportsHubScreen: React.FC<ReportsHubScreenProps> = ({ onOpenProjec
       </main>
 
       {/* Модальное окно выбора проекта для финансового отчета */}
-      {isProjectReportModalOpen && (
-        <ProjectSelectionModal
-          projects={projects}
-          title="Выберите проект для финансового отчета"
-          onSelectProject={(project) => {
-            onOpenProjectReport(project);
-            setIsProjectReportModalOpen(false);
-          }}
-          onClose={() => setIsProjectReportModalOpen(false)}
-        />
-      )}
+      <ProjectSelectionModal
+        isOpen={isProjectReportModalOpen}
+        projects={projects}
+        title="Выберите проект для финансового отчета"
+        onSelectProject={(project) => {
+          onOpenProjectReport(project);
+          setIsProjectReportModalOpen(false);
+        }}
+        onClose={() => setIsProjectReportModalOpen(false)}
+      />
 
       {/* Модальное окно выбора проекта для клиентского отчета */}
-      {isClientReportModalOpen && (
-        <ProjectSelectionModal
-          projects={projects}
-          title="Выберите проект для отчета клиенту"
-          onSelectProject={(project) => {
-            onOpenClientReport(project);
-            setIsClientReportModalOpen(false);
-          }}
-          onClose={() => setIsClientReportModalOpen(false)}
-        />
-      )}
+      <ProjectSelectionModal
+        isOpen={isClientReportModalOpen}
+        projects={projects}
+        title="Выберите проект для отчета клиенту"
+        onSelectProject={(project) => {
+          onOpenClientReport(project);
+          setIsClientReportModalOpen(false);
+        }}
+        onClose={() => setIsClientReportModalOpen(false)}
+      />
     </>
   );
 };

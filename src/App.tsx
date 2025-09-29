@@ -1413,6 +1413,15 @@ const App: React.FC = () => {
                                 safeShowAlert('Ошибка при генерации PDF графика работ');
                             }
                         }}
+                        onExportProjectFinancesPDF={async (project, financeEntries) => {
+                            try {
+                                const PdfServiceInstance = await import('./services/PdfService');
+                                await PdfServiceInstance.default.generateProjectFinancesPDF(project, financeEntries, companyProfileHook.profile);
+                            } catch (error) {
+                                console.error('Ошибка при генерации PDF финансов проекта:', error);
+                                safeShowAlert('Ошибка при генерации PDF (финансы)');
+                            }
+                        }}
                         onOpenEstimatesListModal={(data) => appState.openModal('estimatesList', data)}
                         notesHook={notesHook}
                         tasksHook={tasksHook}
@@ -1567,7 +1576,7 @@ const App: React.FC = () => {
             case 'calculator':
                 return (
                     <React.Suspense fallback={<Loader />}>
-                        <CalculatorView appState={appState} companyProfile={companyProfileHook.profile} />
+                        <CalculatorView appState={appState} companyProfile={companyProfileHook.profile} projects={projectsHook.projects} />
                     </React.Suspense>
                 );
             

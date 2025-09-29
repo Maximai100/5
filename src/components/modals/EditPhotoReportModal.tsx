@@ -221,7 +221,7 @@ export const EditPhotoReportModal: React.FC<EditPhotoReportModalProps> = ({
                                             type="text"
                                             value={photo.caption}
                                             onChange={(e) => handleCaptionChange(index, e.target.value)}
-                                            placeholder="Подпись к фотографии"
+                                            placeholder="Подпись к фото"
                                             className="photo-caption-input"
                                         />
                                     </div>

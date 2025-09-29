@@ -1226,6 +1226,44 @@ body.dark-theme .bottom-nav {
 }
 
 
+/* Стили для модальных окон калькулятора */
+.project-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.project-item {
+    padding: 16px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    background-color: var(--secondary-bg-color);
+    transition: background-color 0.2s ease;
+}
+
+.project-item:hover {
+    background-color: var(--border-color);
+}
+
+.project-name {
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--text-color);
+}
+
+.project-details {
+    font-size: 14px;
+    color: var(--hint-color);
+}
+
+.no-projects {
+    text-align: center;
+    color: var(--hint-color);
+    padding: 20px;
+    margin: 0;
+}
+
 /* Финальная двухколоночная структура дашборда */
 .financial-dashboard .project-section-body {
     display: flex;
@@ -1966,12 +2004,13 @@ input[type=number] { -moz-appearance: textfield; }
     justify-content: center;
     width: 32px;
     height: 32px;
+    z-index: 10;
 }
 
-/* .expand-btn:hover {
+.expand-btn:hover {
     background-color: var(--hover-bg-color);
     color: var(--text-color);
-} */
+}
 
 .expand-btn .icon-wrapper {
     width: 20px;
@@ -2854,6 +2893,50 @@ input[type=number] { -moz-appearance: textfield; }
     outline: none;
     border-color: var(--primary-color);
 } */
+
+/* Стили для редактирования фотоотчетов */
+.photos-preview {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.photo-preview-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.photo-preview-item .photo-preview {
+    position: relative;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    aspect-ratio: 1;
+    background-color: var(--bg-secondary);
+}
+
+.photo-preview-item .photo-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.photo-caption-input {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-size: 12px;
+    resize: none;
+}
+
+.photo-caption-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
 
 /* Стили для отображения фотоотчетов в проекте */
 .photo-reports-list {

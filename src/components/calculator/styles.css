@@ -49,6 +49,144 @@
     --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
+/* Стили для модальных окон */
+.construction-calculator-module .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.construction-calculator-module .modal-content {
+    background-color: var(--secondary-bg-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    max-width: 500px;
+    width: 100%;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.construction-calculator-module .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.construction-calculator-module .modal-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.construction-calculator-module .close-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    color: var(--hint-color);
+    transition: all 0.2s ease;
+}
+
+.construction-calculator-module .close-btn:hover {
+    background-color: var(--border-color);
+    color: var(--text-color);
+}
+
+.construction-calculator-module .modal-body {
+    padding: 20px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.construction-calculator-module .modal-footer {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    padding: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+.construction-calculator-module .project-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.construction-calculator-module .project-item {
+    padding: 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    background-color: var(--bg-color);
+    transition: all 0.2s ease;
+}
+
+.construction-calculator-module .project-item:hover {
+    background-color: var(--primary-color);
+    color: var(--primary-text-color);
+    border-color: var(--primary-color);
+}
+
+.construction-calculator-module .project-name {
+    font-weight: 600;
+    margin-bottom: 5px;
+    font-size: 16px;
+}
+
+.construction-calculator-module .project-details {
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+.construction-calculator-module .form-group {
+    margin-bottom: 20px;
+}
+
+.construction-calculator-module .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.construction-calculator-module .form-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+}
+
+.construction-calculator-module .form-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.construction-calculator-module .empty-message {
+    text-align: center;
+    color: var(--hint-color);
+    padding: 40px 20px;
+    margin: 0;
+}
+
 .construction-calculator-module .app-container {
     max-width: 600px;
     margin: 0 auto;

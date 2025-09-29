@@ -498,6 +498,7 @@ export interface ProjectDetailViewProps {
     onNavigateToTasks: () => void;
     onProjectScratchpadChange: (projectId: string, content: string) => void;
     onExportWorkSchedulePDF: (project: Project, workStages: WorkStage[]) => void;
+    onExportProjectFinancesPDF?: (project: Project, financeEntries: FinanceEntry[]) => void;
     onOpenEstimatesListModal: (data?: any) => void;
     notesHook: {
         getNote: (context: NoteContext, entityId?: string | null) => string;

@@ -137,8 +137,8 @@ class PdfService {
       y = 26;
     }
 
-    // Title band
-    y += 6;
+    // Title band spacing (extra gap between header and title)
+    y += 14;
     doc.setFillColor(...PdfService.BRAND_LIGHT);
     doc.setDrawColor(220, 226, 236);
     doc.roundedRect(14, y - 10, pageWidth - 28, 18, 3, 3, 'FD');
@@ -383,6 +383,7 @@ class PdfService {
             3: { halign: 'center', cellWidth: 20, font: PdfService.FONT_NAME },
             4: { cellWidth: 40, font: PdfService.FONT_NAME },
           },
+          margin: { left: 20, right: 20 },
           didDrawPage: (data) => {
             // Добавляем поддержку кириллицы для каждой страницы
             PdfService.ensureCyrillicSupport(doc);
@@ -469,11 +470,11 @@ class PdfService {
       PdfService.formatCurrency(item.quantity * item.price)
     ]);
 
-    autoTable(doc, {
-      head: [['№', 'Наименование работ/материалов', 'Кол-во', 'Ед. изм.', 'Цена за ед.', 'Сумма']],
-      body: tableData,
-      startY: yPosition,
-      styles: {
+      autoTable(doc, {
+        head: [['№', 'Наименование работ/материалов', 'Кол-во', 'Ед. изм.', 'Цена за ед.', 'Сумма']],
+        body: tableData,
+        startY: yPosition,
+        styles: {
         fontSize: 9,
         font: PdfService.FONT_NAME,
         fontStyle: 'normal',
@@ -492,12 +493,12 @@ class PdfService {
         cellPadding: 6,
       },
       columnStyles: {
-        0: { halign: 'center', cellWidth: 15, font: PdfService.FONT_NAME },
-        1: { cellWidth: 75, font: PdfService.FONT_NAME, valign: 'top' },
+        0: { halign: 'center', cellWidth: 12, font: PdfService.FONT_NAME },
+        1: { cellWidth: 70, font: PdfService.FONT_NAME, valign: 'top' },
         2: { halign: 'center', cellWidth: 20, font: PdfService.FONT_NAME },
         3: { halign: 'center', cellWidth: 20, font: PdfService.FONT_NAME },
-        4: { halign: 'right', cellWidth: 30, font: PdfService.FONT_NAME },
-        5: { halign: 'right', cellWidth: 30, font: PdfService.FONT_NAME },
+        4: { halign: 'right', cellWidth: 24, font: PdfService.FONT_NAME },
+        5: { halign: 'right', cellWidth: 24, font: PdfService.FONT_NAME },
       },
       alternateRowStyles: {
         fillColor: [250, 250, 250],
@@ -518,18 +519,24 @@ class PdfService {
     const grandTotal = totalAfterDiscount + taxAmount;
 
     // Улучшенная секция итогов
-    const totalsBoxY = finalY;
+    let totalsBoxY = finalY;
     const totalsBoxWidth = 90;
     const totalsBoxHeight = 45;
     
-    // Тень для рамки итогов
-    doc.setFillColor(235, 235, 235);
-    doc.rect(pageWidth - totalsBoxWidth - 18, totalsBoxY + 2, totalsBoxWidth, totalsBoxHeight, 'F');
-    
-    // Основная рамка для итогов
-    doc.setLineWidth(0.8);
-    doc.setDrawColor(60, 60, 60);
-    doc.rect(pageWidth - totalsBoxWidth - 20, totalsBoxY, totalsBoxWidth, totalsBoxHeight);
+    // Если мало места до подвала, переносим блок итогов на новую страницу
+    let footerY = pageHeight - 60;
+    if (totalsBoxY + totalsBoxHeight + 24 > footerY) {
+      doc.addPage();
+      totalsBoxY = 30;
+      footerY = doc.internal.pageSize.getHeight() - 60;
+    }
+
+    // Тень для рамки итогов (легкая)
+    doc.setFillColor(248, 250, 253);
+    doc.setDrawColor(220, 226, 236);
+    doc.setLineWidth(0.4);
+    ;(doc as any).roundedRect?.(pageWidth - totalsBoxWidth - 20, totalsBoxY, totalsBoxWidth, totalsBoxHeight, 2, 2, 'FD')
+      ?? doc.rect(pageWidth - totalsBoxWidth - 20, totalsBoxY, totalsBoxWidth, totalsBoxHeight, 'FD');
     
     // Заголовок секции итогов
     doc.setFontSize(10);
@@ -577,12 +584,8 @@ class PdfService {
     doc.text(PdfService.formatCurrency(grandTotal), rightAlignX, currentY + 5, { align: 'right' });
 
     // Улучшенный профессиональный подвал
-    const footerY = pageHeight - 60;
     
-    // Разделительная линия перед подписью
-    doc.setLineWidth(0.5);
-    doc.setDrawColor(120, 120, 120);
-    doc.line(20, footerY - 15, pageWidth - 20, footerY - 15);
+    // Убрана разделительная линия, чтобы не пересекалась с блоком итогов
     
     // Блок подписей с рамками
     doc.setFontSize(10);
@@ -739,10 +742,7 @@ class PdfService {
     // Улучшенный подвал акта
     const footerY = pageHeight - 60;
     
-    // Разделительная линия перед подписью
-    doc.setLineWidth(0.5);
-    doc.setDrawColor(120, 120, 120);
-    doc.line(20, footerY - 15, pageWidth - 20, footerY - 15);
+    // Убрана разделительная линия для аккуратного подвала
     
     // Блок подписей с рамками
     doc.setFontSize(10);
@@ -876,10 +876,7 @@ class PdfService {
     // Улучшенный подвал графика
     const footerY = pageHeight - 60;
     
-    // Разделительная линия перед подписью
-    doc.setLineWidth(0.5);
-    doc.setDrawColor(120, 120, 120);
-    doc.line(20, footerY - 15, pageWidth - 20, footerY - 15);
+    // Убрана разделительная линия для аккуратного подвала
     
     // Блок подписей с рамками
     doc.setFontSize(10);
@@ -1048,6 +1045,143 @@ class PdfService {
     }
 
     const fileName = `Финансовый_отчет_${project.name.replace(/[^a-zA-Z0-9]/g, '_')}_${PdfService.formatDate(new Date().toISOString())}.pdf`;
+    PdfService.addPageNumbers(doc);
+    doc.save(fileName);
+    return Promise.resolve();
+  }
+
+  /**
+   * Список финансовых операций проекта
+   */
+  static async generateProjectFinancesPDF(
+    project: Project,
+    financeEntries: FinanceEntry[],
+    companyProfile: CompanyProfile | null
+  ): Promise<void> {
+    const doc = await PdfService.initializeDoc();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let y = await PdfService.drawCompanyHeader(doc, companyProfile, 'ФИНАНСЫ ПРОЕКТА', project.name);
+
+    // Сводка
+    const totalIncome = financeEntries.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0);
+    const totalExpenses = financeEntries.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0);
+    const balance = totalIncome - totalExpenses;
+
+    const cardWidth = (pageWidth - 48) / 3;
+    const cardHeight = 24;
+    const startX = 16;
+    const labels: Array<[string, string, [number, number, number]]> = [
+      ['Приход', PdfService.formatCurrency(totalIncome), [48, 170, 70]],
+      ['Расход', PdfService.formatCurrency(totalExpenses), [200, 60, 60]],
+      ['Баланс', PdfService.formatCurrency(balance), balance >= 0 ? [48, 170, 70] : [200, 60, 60]],
+    ];
+    labels.forEach(([label, value, color], idx) => {
+      const x = startX + idx * (cardWidth + 8);
+      doc.setFillColor(...PdfService.BRAND_LIGHT);
+      doc.setDrawColor(220, 226, 236);
+      doc.setLineWidth(0.3);
+      ;(doc as any).roundedRect?.(x, y, cardWidth, cardHeight, 2, 2, 'FD') ?? doc.rect(x, y, cardWidth, cardHeight, 'FD');
+      doc.setFontSize(9);
+      PdfService.ensureCyrillicSupport(doc);
+      doc.setTextColor(...PdfService.BRAND_DARK);
+      doc.text(label, x + 8, y + 9);
+      doc.setFontSize(12);
+      PdfService.ensureCyrillicSupport(doc, 'bold');
+      doc.setTextColor(...(color as [number, number, number]));
+      doc.text(value, x + 8, y + 18);
+      doc.setTextColor(...PdfService.BRAND_DARK);
+    });
+    y += cardHeight + 16;
+
+    // Таблица операций
+    const catMap: Record<string, string> = {
+      materials: 'Материалы',
+      labor: 'Работы',
+      transport: 'Транспорт',
+      tools_rental: 'Аренда инструмента',
+      other: 'Прочее'
+    };
+    const rows = financeEntries
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .map(e => [
+        new Date(e.date).toLocaleDateString('ru-RU'),
+        e.type === 'income' ? 'Приход' : 'Расход',
+        (e.category ? (catMap[e.category] || e.category) : 'Без категории'),
+        e.description || '-',
+        `${e.type === 'income' ? '+' : '-'}${PdfService.formatCurrency(e.amount)}`
+      ]);
+
+    autoTable(doc, {
+      head: [['Дата', 'Тип', 'Категория', 'Описание', 'Сумма']],
+      body: rows,
+      startY: y,
+      styles: { font: PdfService.FONT_NAME, fontSize: 9, cellPadding: 4, lineWidth: 0.2, lineColor: [200, 200, 200] },
+      headStyles: { fillColor: PdfService.BRAND_PRIMARY, textColor: 255, font: PdfService.FONT_NAME, fontStyle: 'bold' },
+      columnStyles: {
+        0: { halign: 'center', cellWidth: 24 },
+        1: { halign: 'center', cellWidth: 20 },
+        2: { cellWidth: 32 },
+        3: { cellWidth: 74 },
+        4: { halign: 'right', cellWidth: 20 },
+      },
+      margin: { left: 16, right: 16 },
+      alternateRowStyles: { fillColor: [250, 250, 250] }
+    });
+
+    const fileName = `Финансы_${project.name.replace(/[^a-zA-Z0-9]/g, '_')}_${PdfService.formatDate(new Date().toISOString())}.pdf`;
+    PdfService.addPageNumbers(doc);
+    doc.save(fileName);
+    return Promise.resolve();
+  }
+
+  /**
+   * Смета материалов (калькулятор)
+   */
+  static async generateMaterialsEstimatePDF(
+    summary: { floorArea: number; wallArea: number; perimeter: number; totalCost: number; date?: string },
+    rows: { name: string; quantity: string; cost: number | null }[],
+    companyProfile: CompanyProfile | null
+  ): Promise<void> {
+    const doc = await PdfService.initializeDoc();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let y = await PdfService.drawCompanyHeader(doc, companyProfile, 'СМЕТА МАТЕРИАЛОВ');
+
+    // Мета-информация
+    doc.setFontSize(10);
+    PdfService.ensureCyrillicSupport(doc);
+    const dateStr = summary.date || new Date().toLocaleDateString('ru-RU');
+    doc.text(`Дата: ${dateStr}`, 16, y);
+    y += 8;
+    const info = [
+      `Общая площадь пола: ${summary.floorArea.toFixed(2)} м²`,
+      `Общая площадь стен: ${summary.wallArea.toFixed(2)} м²`,
+      `Общий периметр: ${summary.perimeter.toFixed(2)} м`,
+    ];
+    info.forEach(line => { doc.text(line, 16, y); y += 6; });
+
+    doc.setFontSize(12);
+    PdfService.ensureCyrillicSupport(doc, 'bold');
+    doc.text(`Итоговая стоимость: ${PdfService.formatCurrency(summary.totalCost)}`, 16, y + 6);
+    y += 14;
+
+    const tableRows = rows.map(r => [
+      r.name,
+      r.quantity,
+      r.cost && r.cost > 0 ? PdfService.formatCurrency(r.cost) : '-'
+    ]);
+
+    autoTable(doc, {
+      head: [['Материал', 'Количество', 'Стоимость']],
+      body: tableRows,
+      startY: y,
+      styles: { font: PdfService.FONT_NAME, fontSize: 9, cellPadding: 4, lineWidth: 0.2, lineColor: [200, 200, 200] },
+      headStyles: { fillColor: PdfService.BRAND_PRIMARY, textColor: 255, font: PdfService.FONT_NAME, fontStyle: 'bold' },
+      columnStyles: { 0: { cellWidth: 90 }, 1: { cellWidth: 50 }, 2: { halign: 'right', cellWidth: 30 } },
+      margin: { left: 16, right: 16 },
+      alternateRowStyles: { fillColor: [250, 250, 250] }
+    });
+
+    const fileName = `Смета_материалов_${new Date().toISOString().slice(0,10)}.pdf`;
     PdfService.addPageNumbers(doc);
     doc.save(fileName);
     return Promise.resolve();
