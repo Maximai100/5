@@ -33,7 +33,7 @@ create index if not exists idx_client_report_shares_token on public.client_repor
 create index if not exists idx_client_report_shares_user on public.client_report_shares (user_id);
 ```
 
-2. Включите RLS и добавьте политики:
+2. Включите RLS и добавьте безопасные политики:
 
 ```sql
 alter table public.client_report_shares enable row level security;
@@ -43,13 +43,10 @@ create policy client_report_shares_insert_owner
   on public.client_report_shares for insert
   with check (auth.uid() = user_id);
 
--- Чтение по токену всем (публичный доступ только к конкретной записи)
-create policy client_report_shares_select_by_token
+-- Чтение только владельцу (без публичного SELECT по таблице)
+create policy client_report_shares_select_owner
   on public.client_report_shares for select
-  using (
-    -- Разрешаем чтение по токену
-    token is not null
-  );
+  using (auth.uid() = user_id);
 ```
 
 3. (Опционально) Добавьте истечение ссылок:
@@ -65,7 +62,7 @@ where expires_at is null or expires_at > now();
 
 ## Live-режим (ссылка всегда показывает актуальные данные)
 
-Чтобы заказчик видел свежие данные по ссылке без переотправки, добавьте SQL-функцию, которая формирует отчет «на лету» по токену. Приложение сначала вызывает RPC `get_client_report`, и только если он не настроен — падает назад на сохраненный payload.
+Чтобы заказчик видел свежие данные по ссылке без переотправки, используйте SQL-функцию (SECURITY DEFINER), которая формирует отчет «на лету» по токену. Публичного SELECT по таблице не требуется: приложение сначала вызывает RPC `get_client_report`, и только если он не настроен — падает назад на сохраненный payload.
 
 1) Функция-агрегатор (формирует JSON под фронтенд):
 
@@ -77,7 +74,7 @@ security definer
 set search_path = public
 as $$
 with s as (
-  select * from public.client_report_shares where token = p_token limit 1
+  select * from public.client_report_shares_valid where token = p_token limit 1
 )
 select jsonb_build_object(
   'version', 1,

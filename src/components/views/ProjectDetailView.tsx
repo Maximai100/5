@@ -687,13 +687,13 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
 
             {/* Модальное окно редактирования фотоотчета */}
             {editingPhotoReport && (
-                <EditPhotoReportModal
-                    photoReport={editingPhotoReport}
-                    onClose={handleCloseEditPhotoReport}
-                    onSave={handleSavePhotoReport}
-                    showAlert={safeShowAlert}
-                    workStages={workStages}
-                />
+                            <EditPhotoReportModal
+                                photoReport={editingPhotoReport}
+                                onClose={handleCloseEditPhotoReport}
+                                onSave={handleSavePhotoReport}
+                                showAlert={(message) => safeShowAlert(message)}
+                                workStages={workStages}
+                            />
             )}
             {/* Модальное окно редактирования задачи */}
             {selectedTask && (

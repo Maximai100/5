@@ -64,7 +64,8 @@ export const PhotoViewerModal: React.FC<PhotoViewerModalProps> = ({ photo, onClo
             if (longPressTimer.current) window.clearTimeout(longPressTimer.current);
             longPressTimer.current = window.setTimeout(() => setShowContext(true), 600);
         } else if (e.touches.length === 2) {
-            const [a, b] = e.touches;
+            const a = e.touches[0];
+            const b = e.touches[1];
             const dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
             setStartDist(dist);
             setStartScale(scale);
@@ -75,7 +76,8 @@ export const PhotoViewerModal: React.FC<PhotoViewerModalProps> = ({ photo, onClo
         if (e.touches.length === 1 && startX !== null) {
             setDeltaX(e.touches[0].clientX - startX);
         } else if (e.touches.length === 2 && startDist) {
-            const [a, b] = e.touches;
+            const a = e.touches[0];
+            const b = e.touches[1];
             const dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
             const factor = dist / startDist;
             setScale(Math.min(4, Math.max(1, startScale * factor)));

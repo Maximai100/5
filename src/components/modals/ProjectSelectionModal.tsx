@@ -1,12 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { IconClose } from '../common/Icon';
-
-interface Project {
-  id: string;
-  name: string;
-  client: string;
-  address: string;
-}
+import { Project } from '../../types';
 
 interface ProjectSelectionModalProps {
   isOpen: boolean;

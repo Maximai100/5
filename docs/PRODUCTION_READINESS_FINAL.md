@@ -93,8 +93,8 @@ git push origin main
 
 ### **Переменные окружения для Vercel:**
 ```
-VITE_SUPABASE_URL=https://prorab360.online
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE
+VITE_SUPABASE_URL=https://<your-project>.supabase.co
+VITE_SUPABASE_ANON_KEY=<REDACTED_ANON_KEY>
 ```
 
 ---
@@ -131,6 +131,8 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6
 **Можно смело деплоить в продакшен!** 🚀
 
 ---
+
+> Важно: реальные ключи нельзя хранить в репозитории и документации. При обнаружении утечек — выполните ротацию в Supabase и обновите переменные в Vercel. См. docs/ENV_SECURITY.md
 
 *Последнее обновление: 26.09.2025*
 *Статус: PRODUCTION READY ✅*

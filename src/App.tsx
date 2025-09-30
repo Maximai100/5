@@ -231,16 +231,8 @@ const App: React.FC = () => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             setSession(session);
             
-            // Проверяем, нужен ли onboarding после регистрации
-            if (event === 'SIGNED_UP' && session?.user) {
-                // Проверяем, есть ли данные в user_meta_data
-                const userMeta = session.user.user_metadata;
-                const hasOnboardingData = userMeta?.first_name && userMeta?.last_name && userMeta?.phone && userMeta?.city;
-                
-                if (!hasOnboardingData) {
-                    setNeedsOnboarding(true);
-                }
-            } else if (event === 'SIGNED_IN' && session?.user) {
+            // Проверяем, нужен ли onboarding после входа
+            if (event === 'SIGNED_IN' && session?.user) {
                 // При входе также проверяем, нужен ли onboarding
                 const userMeta = session.user.user_metadata;
                 const hasOnboardingData = userMeta?.first_name && userMeta?.last_name && userMeta?.phone && userMeta?.city;

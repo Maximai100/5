@@ -1,4 +1,5 @@
 // Service Worker для автоматического обновления PWA
+const DEBUG = false;
 const CACHE_NAME = 'smeta-app-cache-v4';
 const STATIC_CACHE_NAME = 'smeta-static-v4';
 const DYNAMIC_CACHE_NAME = 'smeta-dynamic-v4';
@@ -24,7 +25,7 @@ const ALWAYS_FRESH = [
 
 // Установка Service Worker
 self.addEventListener('install', (event) => {
-  console.log('SW: Installing new version...');
+  DEBUG && console.log('SW: Installing new version...');
   
   event.waitUntil(
     Promise.all([
@@ -40,7 +41,7 @@ self.addEventListener('install', (event) => {
 
 // Активация Service Worker
 self.addEventListener('activate', (event) => {
-  console.log('SW: Activating new version...');
+  DEBUG && console.log('SW: Activating new version...');
   
   event.waitUntil(
     Promise.all([
@@ -49,7 +50,7 @@ self.addEventListener('activate', (event) => {
         return Promise.all(
           keys.map((key) => {
             if (key !== STATIC_CACHE_NAME && key !== DYNAMIC_CACHE_NAME) {
-              console.log('SW: Deleting old cache:', key);
+              DEBUG && console.log('SW: Deleting old cache:', key);
               return caches.delete(key);
             }
           })
@@ -69,15 +70,16 @@ self.addEventListener('fetch', (event) => {
   // Пропускаем не-GET запросы
   if (request.method !== 'GET') return;
 
-  // Кэшируем внешние изображения (например, Supabase Storage)
+  // Кэшируем только изображения из Supabase Storage; остальные внешние запросы не перехватываем
   const isImage = url.pathname.match(/\.(png|jpg|jpeg|gif|webp|avif)$/i);
   const isSupabase = /supabase\.co/.test(url.hostname) || /supabase\.in/.test(url.hostname);
+  const isSupabaseStorage = isSupabase && url.pathname.startsWith('/storage/v1/object');
   if (url.origin !== location.origin) {
-    if (isImage || isSupabase) {
+    if (isSupabaseStorage && isImage) {
       event.respondWith(cacheFirst(request));
       return;
     }
-    return; // прочие внешние домены не трогаем
+    return; // прочие внешние домены не трогаем и не кэшируем
   }
   
   // Пропускаем запросы к TypeScript файлам и файлам разработки
@@ -110,7 +112,7 @@ async function handleRequest(request) {
     // Для остальных - Stale While Revalidate
     return staleWhileRevalidate(request);
   } catch (error) {
-    console.log('SW: Error in handleRequest:', error);
+    DEBUG && console.log('SW: Error in handleRequest:', error);
     // В случае ошибки, просто делаем обычный fetch
     return fetch(request);
   }
@@ -129,7 +131,7 @@ async function networkFirst(request) {
     
     return networkResponse;
   } catch (error) {
-    console.log('SW: Network failed, trying cache:', request.url);
+    DEBUG && console.log('SW: Network failed, trying cache:', request.url);
     const cachedResponse = await caches.match(request);
     return cachedResponse || new Response('Offline', { status: 503 });
   }
@@ -170,14 +172,14 @@ async function staleWhileRevalidate(request) {
       }
       return networkResponse;
     }).catch((error) => {
-      console.log('SW: Background fetch failed:', request.url, error);
+      DEBUG && console.log('SW: Background fetch failed:', request.url, error);
       // Игнорируем ошибки сети для фонового обновления
     });
     
     // Возвращаем кэшированный ответ или ждем сеть
     return cachedResponse || fetchPromise;
   } catch (error) {
-    console.log('SW: Error in staleWhileRevalidate:', error);
+    DEBUG && console.log('SW: Error in staleWhileRevalidate:', error);
     // В случае ошибки, просто делаем обычный fetch
     return fetch(request);
   }

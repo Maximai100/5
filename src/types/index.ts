@@ -1,4 +1,5 @@
 export type ProjectStatus = 'planned' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled';
+export type ProjectStatusFilter = ProjectStatus | 'all';
 export type ToolLocation = 'on_base' | 'in_repair' | 'on_project';
 export type FinanceCategory = 'materials' | 'labor' | 'transport' | 'tools_rental' | 'other';
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
@@ -462,8 +463,8 @@ export interface EstimateViewProps {
 
 export interface ProjectsListViewProps {
     handleOpenProjectModal: (project: Partial<Project> | null) => void;
-    projectStatusFilter: ProjectStatus;
-    setProjectStatusFilter: (value: ProjectStatus) => void;
+    projectStatusFilter: ProjectStatusFilter;
+    setProjectStatusFilter: (value: ProjectStatusFilter) => void;
     projectSearch: string;
     setProjectSearch: (value: string) => void;
     handleInputFocus: (e: React.FocusEvent<HTMLElement>) => void;
@@ -527,6 +528,7 @@ export interface ProjectDetailViewProps {
     appState: {
         openModal: (modalType: string, data?: any) => void;
         closeModal: (modalType: string) => void;
+        navigateToView: (view: string, data?: any) => void;
     };
     projectDataHook?: {
         loadProjectData: (projectId: string) => Promise<void>;

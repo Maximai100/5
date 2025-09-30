@@ -11,7 +11,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint \"{src,apps,libs}/**/*.{{ts,tsx}}\"",
+    "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "format": "prettier --write \"{src,apps,libs}/**/*.{{ts,tsx,js,jsx,json,css,md}}\"",
     "icons": "node scripts/generate-icons.mjs"
   },
