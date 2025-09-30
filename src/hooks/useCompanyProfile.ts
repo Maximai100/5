@@ -213,9 +213,11 @@ export const useCompanyProfile = (session: Session | null) => {
     }
     
     try {
-      // 1. Проверяем конфигурацию Supabase
-
-      console.log('🔍 Supabase Key:', (supabase as any).supabaseKey?.substring(0, 20) + '...');
+      // 1. Проверяем конфигурацию Supabase (только в dev)
+      if (import.meta.env.DEV) {
+        const keyPreview = (supabase as any).supabaseKey ? (supabase as any).supabaseKey.substring(0, 8) + '…' : 'absent';
+        console.log('🔍 Supabase Key (dev):', keyPreview);
+      }
       
       // 2. Проверяем доступность bucket "logos" с принудительным обновлением
 
@@ -402,4 +404,3 @@ export const useCompanyProfile = (session: Session | null) => {
 };
 
 export default useCompanyProfile;
-

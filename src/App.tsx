@@ -1418,7 +1418,14 @@ const App: React.FC = () => {
                         onOpenLibraryModal={() => appState.openModal('library')}
                         onOpenEstimatesListModal={() => appState.openModal('estimatesList')}
                         onOpenSettingsModal={() => appState.openModal('settings')}
-                        onOpenAISuggestModal={() => appState.openModal('aiSuggest')}
+                        onOpenAISuggestModal={() => {
+                            const aiEnabled = Boolean((import.meta as any).env?.VITE_GEMINI_API_KEY) && ((import.meta as any).env?.VITE_ENABLE_AI !== 'false');
+                            if (aiEnabled) {
+                                appState.openModal('aiSuggest');
+                            } else {
+                                safeShowAlert('AI-помощник отключен. Добавьте VITE_GEMINI_API_KEY и установите VITE_ENABLE_AI=true.');
+                            }
+                        }}
                         estimateNumber={estimatesHook.estimateNumber}
                         setEstimateNumber={estimatesHook.setEstimateNumber}
                         estimateDate={estimatesHook.estimateDate}
@@ -1472,12 +1479,12 @@ const App: React.FC = () => {
                     </React.Suspense>
                 );
             
-            case 'projectDetail':
+            case 'projectDetail': {
                 if (!activeProject) {
                     appState.setActiveView('projects');
                     return null;
                 }
-                
+
                 const projectEstimates = estimatesHook.getEstimatesByProject(activeProject.id);
 
                 return (
@@ -1538,6 +1545,7 @@ const App: React.FC = () => {
                         />
                     </React.Suspense>
                 );
+            }
             
             case 'inventory':
                 return (
@@ -2061,7 +2069,10 @@ const App: React.FC = () => {
                 </React.Suspense>
             )}
 
-            {appState.showAISuggestModal && (
+            {(() => {
+                const aiEnabled = Boolean((import.meta as any).env?.VITE_GEMINI_API_KEY) && ((import.meta as any).env?.VITE_ENABLE_AI !== 'false');
+                return aiEnabled && appState.showAISuggestModal;
+            })() && (
                 <React.Suspense fallback={<Loader />}>
                 <AISuggestModal
                     onClose={() => appState.closeModal('aiSuggest')}

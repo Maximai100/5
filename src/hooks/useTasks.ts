@@ -11,7 +11,7 @@ export const useTasks = (session: Session | null) => {
     const [error, setError] = useState<string | null>(null);
 
     // Загрузка всех задач для текущего пользователя
-    const fetchAllTasks = useCallback(async (session: Session | null) => {
+    const fetchAllTasks = useCallback(async (session: Session | null, retryCount = 0) => {
         if (!session?.user) {
             console.log('useTasks: Нет сессии, очищаем задачи');
             setTasks([]);
@@ -22,6 +22,8 @@ export const useTasks = (session: Session | null) => {
         setError(null);
 
         try {
+            // Задержка для предотвращения спама запросов
+            await new Promise(resolve => setTimeout(resolve, 50 * (retryCount + 1)));
 
             const { data, error } = await supabase
                 .from('tasks')
@@ -58,7 +60,30 @@ export const useTasks = (session: Session | null) => {
             }
         } catch (err) {
             console.error('❌ useTasks: Ошибка при загрузке задач:', err);
-            setError(err instanceof Error ? err.message : 'Неизвестная ошибка');
+            
+            // Retry логика для сетевых ошибок
+            if (retryCount < 2 && err instanceof Error && 
+                (err.message.includes('NetworkError') || err.message.includes('fetch'))) {
+                console.log(`🔄 useTasks: Повторная попытка ${retryCount + 1}/3`);
+                setTimeout(() => {
+                    fetchAllTasks(session, retryCount + 1);
+                }, 1000 * (retryCount + 1));
+                return;
+            }
+            
+            // Обработка ошибок
+            if (err instanceof Error) {
+                if (err.message.includes('NetworkError')) {
+                    setError('Ошибка сети. Проверьте подключение.');
+                } else {
+                    setError(`Ошибка: ${err.message}`);
+                }
+            } else {
+                setError('Неизвестная ошибка');
+            }
+            
+            // Показываем пустые данные вместо краха
+            setTasks([]);
         } finally {
             setLoading(false);
         }

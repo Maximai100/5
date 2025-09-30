@@ -11,12 +11,13 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "prebuild": "node remove_debug_logs.js",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "format": "prettier --write \"{src,apps,libs}/**/*.{{ts,tsx,js,jsx,json,css,md}}\"",
     "icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
-    "@google/genai": "latest",
+    "@google/genai": "^1.21.0",
     "@supabase/supabase-js": "^2.57.2",
     "jspdf": "^2.5.2",
     "jspdf-autotable": "^3.8.4",

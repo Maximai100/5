@@ -20,7 +20,6 @@ declare global {
     }
 }
 
-
 /**
  * Safely shows an alert. Falls back to browser's alert if Telegram API is unavailable or outdated.
  * @param message The message to display.
@@ -69,7 +68,6 @@ const convertToMeters = (value: string, fromUnit: Unit): number => {
     if (isNaN(num)) return 0;
     return num / conversionFactors[fromUnit];
 };
-
 
 interface Opening {
     id: number;
@@ -272,7 +270,6 @@ const Tooltip: React.FC<{ text: string }> = ({ text }) => (
     </div>
 );
 
-
 const CalcInput = React.forwardRef<
     HTMLInputElement,
     {
@@ -321,7 +318,6 @@ const CalcInput = React.forwardRef<
         </div>
     );
 });
-
 
 // Custom hook for bag-based material calculations
 const useBagCalculation = (
@@ -382,7 +378,6 @@ const useBagCalculation = (
         result
     };
 };
-
 
 // --- START OF MATERIAL CALCULATOR COMPONENTS ---
 
@@ -795,7 +790,6 @@ const ScreedCalculator: React.FC<{ floorArea: number } & MaterialCalculatorProps
         }
     };
 
-
     return (
         <div className="card material-calculator-card">
             <h4>{name}</h4>
@@ -820,7 +814,6 @@ const ScreedCalculator: React.FC<{ floorArea: number } & MaterialCalculatorProps
         </div>
     );
 };
-
 
 const SkirtingCalculator: React.FC<{ perimeter: number, totalDoorWidth: number, totalExclusionWidth: number } & MaterialCalculatorProps> = ({ perimeter, totalDoorWidth, totalExclusionWidth, name, onResultChange, materials }) => {
     const [skirtingLength, setSkirtingLength] = useState('2.5');
@@ -1065,7 +1058,6 @@ const DrywallCalculator: React.FC<{ wallArea: number, floorArea: number, perimet
         }
     };
 
-
     return (
         <div className="card material-calculator-card">
             <h4>{name}</h4>
@@ -1256,9 +1248,7 @@ const ArbitraryMaterialsCalculator: React.FC<ArbitraryMaterialCalculatorProps> =
     );
 };
 
-
 // --- END OF MATERIAL CALCULATOR COMPONENTS ---
-
 
 // --- START OF DECOMPOSED VIEW COMPONENTS ---
 
@@ -1592,7 +1582,6 @@ const RoomEditor: React.FC<{
     );
 };
 
-
 const ResultsPage: React.FC<{
     rooms: RoomData[];
     materialResults: Record<string, MaterialResult | null>;
@@ -1665,9 +1654,6 @@ const ResultsPage: React.FC<{
             // setIsEstimateNameModalOpen(true); // TODO: добавить состояние для модального окна
         }
     };
-
-
-
 
     const handleExportPdf = async () => {
         try {
@@ -1812,7 +1798,6 @@ const ResultsPage: React.FC<{
     );
 };
 
-
 const CalculatorView: React.FC<{
     rooms: RoomData[];
     setRooms: React.Dispatch<React.SetStateAction<RoomData[]>>;
@@ -1902,7 +1887,6 @@ const CalculatorView: React.FC<{
         });
         setErrors(newErrors);
     }, [rooms]);
-    
 
     const canProceed = Object.values(errors).every(roomErrors => Object.keys(roomErrors).length === 0);
 
@@ -2002,7 +1986,6 @@ const CalculatorView: React.FC<{
     );
 };
 // --- END OF DECOMPOSED VIEW COMPONENTS ---
-
 
 const getDefaultRoom = (): RoomData => ({
     id: Date.now(),
@@ -2532,7 +2515,7 @@ export const CalculatorModule: React.FC<CalculatorModuleProps> = ({ appState, co
                 
                 // Перенаправление пользователя на страницу проекта
                 if (appState) {
-                    console.log('Переходим к проекту:', currentProjectId);
+
                     appState.navigateToProject(currentProjectId);
                 }
             } catch (saveError) {
@@ -2822,7 +2805,6 @@ export const CalculatorModule: React.FC<CalculatorModuleProps> = ({ appState, co
         setSavedMaterials(updatedMaterials);
         localStorage.setItem('savedMaterials', JSON.stringify(updatedMaterials));
     };
-
 
     return (
         <>

@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
+  const isProd = mode === 'production';
   const devPort = Number(env.VITE_DEV_PORT ?? env.PORT ?? 5173);
   const enableHmr = env.VITE_ENABLE_HMR === 'true';
   const hmrHost = env.VITE_HMR_HOST || '';
@@ -34,6 +35,10 @@ export default defineConfig(({ mode }) => {
         'Pragma': 'no-cache',
         'Expires': '0'
       }
+    },
+    // Удаляем console.* и debugger только в production
+    esbuild: {
+      drop: isProd ? ['console', 'debugger'] : []
     },
     build: {
       target: 'esnext',
