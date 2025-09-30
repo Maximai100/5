@@ -41,6 +41,7 @@ const ReportsHubScreen = React.lazy(() => import('./components/views/ReportsHubS
 const ProjectFinancialReportScreen = React.lazy(() => import('./components/views/ProjectFinancialReportScreen').then(m => ({ default: m.ProjectFinancialReportScreen })));
 const ClientReportScreen = React.lazy(() => import('./components/views/ClientReportScreen').then(m => ({ default: m.ClientReportScreen })));
 const OverallFinancialReportScreen = React.lazy(() => import('./components/views/OverallFinancialReportScreen').then(m => ({ default: m.OverallFinancialReportScreen })));
+const PublicClientReportView = React.lazy(() => import('./components/views/PublicClientReportView').then(m => ({ default: m.default })));
 const WorkspaceView = React.lazy(() => import('./components/views/WorkspaceView').then(m => ({ default: m.WorkspaceView })));
 const ScratchpadView = React.lazy(() => import('./components/views/ScratchpadView').then(m => ({ default: m.ScratchpadView })));
 const ProjectTasksScreen = React.lazy(() => import('./components/views/ProjectTasksScreen').then(m => ({ default: m.ProjectTasksScreen })));
@@ -65,6 +66,7 @@ import { useTasks } from './hooks/useTasks';
 import { useFileStorage } from './hooks/useFileStorage';
 import { dataService, storageService } from './services/storageService';
 import PdfService from './services/PdfService';
+import { decodePayloadFromParam, tryFetchServerShare, ClientReportPayload } from './utils/shareUtils';
 
 const App: React.FC = () => {
     
@@ -99,6 +101,10 @@ const App: React.FC = () => {
         return () => window.removeEventListener('error', handleGlobalError);
     }, []);
 
+    // Public share rendering state (client report for customer)
+    const [publicSharePayload, setPublicSharePayload] = useState<ClientReportPayload | null>(null);
+    const [publicShareLoading, setPublicShareLoading] = useState(false);
+
     // Use new hooks - ВСЕГДА вызываем хуки в начале компонента
     const appState = useAppState();
     const estimatesHook = useEstimates(session);
@@ -124,6 +130,30 @@ const App: React.FC = () => {
     // Логирование состояния после инициализации хуков (перемещено после объявления всех хуков)
 
     // Subscribe to Supabase auth changes - перемещен после объявления хуков
+
+    // Check for public share param in URL
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const shareParam = params.get('share');
+        if (!shareParam) return;
+        setPublicShareLoading(true);
+        (async () => {
+            try {
+                if (shareParam.startsWith('e.')) {
+                    const payload = decodePayloadFromParam(shareParam);
+                    if (payload) setPublicSharePayload(payload);
+                } else if (shareParam.startsWith('s.')) {
+                    const token = shareParam.slice(2);
+                    const payload = await tryFetchServerShare(token);
+                    if (payload) setPublicSharePayload(payload);
+                }
+            } catch (e) {
+                console.warn('Failed to load public share payload:', e);
+            } finally {
+                setPublicShareLoading(false);
+            }
+        })();
+    }, []);
 
     // Функция для загрузки всех смет
     const fetchAllEstimates = useCallback(async () => {
@@ -1326,6 +1356,18 @@ const App: React.FC = () => {
     }, [appState, notesHook]);
 
     const renderView = () => {
+        // Public client report route (via ?share=...)
+        if (publicShareLoading) {
+            return <Loader />;
+        }
+        if (publicSharePayload) {
+            return (
+                <React.Suspense fallback={<Loader />}>
+                    <PublicClientReportView payload={publicSharePayload} />
+                </React.Suspense>
+            );
+        }
+
         switch (appState.activeView) {
             case 'workspace':
                 return (
@@ -1643,6 +1685,18 @@ const App: React.FC = () => {
                 );
         }
     };
+
+    // Show public share page standalone (no app chrome)
+    if (publicShareLoading) {
+        return <Loader />;
+    }
+    if (publicSharePayload) {
+        return (
+            <React.Suspense fallback={<Loader />}>
+                <PublicClientReportView payload={publicSharePayload} />
+            </React.Suspense>
+        );
+    }
 
     // Show error screen if there's an error
     if (hasError) {

@@ -1,8 +1,10 @@
-import React from 'react';
-import { Project, FinanceEntry, WorkStage } from '../../types';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Project, FinanceEntry, WorkStage, PhotoReport } from '../../types';
 import { ListItem } from '../ui/ListItem';
 import { IconTrendingUp, IconCheckCircle, IconImage, IconChevronRight } from '../common/Icon';
-import { financeCategoryToRu } from '../../utils';
+import { financeCategoryToRu, safeShowAlert, safeCopyToClipboard } from '../../utils';
+import { buildClientReportPayload, buildShareUrl, encodePayloadToParam, tryCreateServerShare } from '../../utils/shareUtils';
+import { useFileStorage } from '../../hooks/useFileStorage';
 
 interface ClientReportScreenProps {
   project: Project;
@@ -21,6 +23,32 @@ export const ClientReportScreen: React.FC<ClientReportScreenProps> = ({
   formatCurrency,
   onBack
 }) => {
+  const { getPhotoReports } = useFileStorage();
+  const [photoReports, setPhotoReports] = useState<PhotoReport[]>([]);
+  const [isSharing, setIsSharing] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        const data = await getPhotoReports(project.id);
+        if (!isMounted) return;
+        const mapped: PhotoReport[] = (data || []).map((row: any) => ({
+          id: row.id,
+          projectId: row.project_id,
+          title: row.title,
+          photos: row.photos || [],
+          date: row.date || row.created_at,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+        }));
+        setPhotoReports(mapped);
+      } catch (e) {
+        console.warn('Не удалось загрузить фотоотчеты для отчета клиента:', e);
+      }
+    })();
+    return () => { isMounted = false; };
+  }, [project.id, getPhotoReports]);
   // Получаем текущую дату
   const today = new Date().toLocaleDateString('ru-RU', {
     year: 'numeric',
@@ -51,14 +79,49 @@ export const ClientReportScreen: React.FC<ClientReportScreenProps> = ({
     .filter(stage => stage.status === 'completed')
     .sort((a, b) => new Date(b.endDate || 0).getTime() - new Date(a.endDate || 0).getTime());
 
-  // Имитируем фотоотчет (в будущем здесь будут реальные фото)
-  const mockPhotos = [
-    { id: 1, title: 'Начало работ', date: '15.01.2024' },
-    { id: 2, title: 'Фундамент', date: '20.01.2024' },
-    { id: 3, title: 'Стены', date: '25.01.2024' },
-    { id: 4, title: 'Крыша', date: '30.01.2024' },
-    { id: 5, title: 'Отделка', date: '05.02.2024' }
-  ];
+  const flatPhotos = useMemo(() => {
+    const sorted = [...photoReports].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const list: Array<{ id: string; url: string; caption?: string; title?: string; date?: string; } > = [];
+    sorted.forEach(rep => {
+      rep.photos.forEach(p => list.push({ id: rep.id, url: p.url, caption: p.caption, title: rep.title, date: rep.date }));
+    });
+    return list.slice(0, 12);
+  }, [photoReports]);
+
+  const handleShare = async () => {
+    try {
+      setIsSharing(true);
+
+      const payload = buildClientReportPayload({
+        project,
+        estimatesTotal: totalEstimateAmount,
+        paidTotal: totalPaidByClient,
+        remainingToPay,
+        workStages: projectWorkStages,
+        photoReports,
+      });
+
+      const serverRes = await tryCreateServerShare({ projectId: project.id, payload });
+      let shareParam: string;
+      if (serverRes.ok && serverRes.token) {
+        shareParam = `s.${serverRes.token}`;
+      } else {
+        shareParam = encodePayloadToParam(payload);
+      }
+
+      const url = buildShareUrl(shareParam);
+      await safeCopyToClipboard(url, () => {
+        safeShowAlert('Ссылка на отчет скопирована в буфер обмена. Отправьте её заказчику.');
+      }, () => {
+        safeShowAlert('Готово. Перешлите эту ссылку заказчику:\n' + url);
+      });
+    } catch (e) {
+      console.error('Ошибка при создании ссылки отчета:', e);
+      safeShowAlert('Не удалось создать ссылку на отчет. Попробуйте позже.');
+    } finally {
+      setIsSharing(false);
+    }
+  };
 
 
   return (
@@ -69,6 +132,11 @@ export const ClientReportScreen: React.FC<ClientReportScreenProps> = ({
           <span>Назад</span>
         </button>
         <h1>Отчет для клиента</h1>
+        <div style={{ marginLeft: 'auto' }}>
+          <button onClick={handleShare} className="btn btn-primary" disabled={isSharing}>
+            {isSharing ? 'Создание...' : 'Поделиться'}
+          </button>
+        </div>
       </header>
 
       <main className="project-detail-main" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-m)' }}>
@@ -169,55 +237,29 @@ export const ClientReportScreen: React.FC<ClientReportScreenProps> = ({
             Фотоотчет
           </h3>
 
-          <div style={{ 
-            display: 'grid', 
-            gap: 'var(--spacing-m)', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-            marginBottom: 'var(--spacing-m)'
-          }}>
-            {mockPhotos.map((photo) => (
-              <div 
-                key={photo.id} 
-                style={{
-                  backgroundColor: 'var(--color-surface-2)',
-                  borderRadius: 'var(--border-radius-s)',
-                  padding: 'var(--spacing-m)',
-                  textAlign: 'center',
-                  border: '1px solid var(--color-separator)'
-                }}
-              >
-                <div style={{
-                  width: '100%',
-                  height: '100px',
-                  backgroundColor: 'var(--color-surface-1)',
-                  borderRadius: 'var(--border-radius-s)',
-                  marginBottom: 'var(--spacing-s)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--color-text-secondary)',
-                  fontSize: 'var(--font-size-s)'
-                }}>
-                  📷
+          {flatPhotos.length > 0 ? (
+            <div style={{ 
+              display: 'grid', 
+              gap: '8px', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))',
+              marginBottom: 'var(--spacing-m)'
+            }}>
+              {flatPhotos.map((p, idx) => (
+                <div key={idx} style={{ width: '100%', aspectRatio: '1/1', overflow: 'hidden', borderRadius: 8, background: 'var(--color-surface-1)' }}>
+                  <img src={p.url} alt={p.caption || 'Фото'} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                 </div>
-                <div style={{ fontSize: 'var(--font-size-s)', color: 'var(--color-text-primary)' }}>
-                  {photo.title}
-                </div>
-                <div style={{ fontSize: 'var(--font-size-s)', color: 'var(--color-text-secondary)' }}>
-                  {photo.date}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <p style={{ 
-            color: 'var(--color-text-secondary)', 
-            textAlign: 'center', 
-            fontSize: 'var(--font-size-s)',
-            fontStyle: 'italic'
-          }}>
-            В будущем здесь будут отображаться реальные фотографии с проекта
-          </p>
+              ))}
+            </div>
+          ) : (
+            <p style={{ 
+              color: 'var(--color-text-secondary)', 
+              textAlign: 'center', 
+              fontSize: 'var(--font-size-s)',
+              fontStyle: 'italic'
+            }}>
+              Пока нет загруженных фотографий для этого проекта
+            </p>
+          )}
         </div>
 
       </main>
