@@ -8,10 +8,10 @@ import { TaskFilterModal } from '../modals/TaskFilterModal';
 import { AddTaskModal } from '../modals/AddTaskModal';
 
 const priorityMap: Record<string, { color: string, name: string }> = {
-    low: { color: '#808080', name: 'Низкий' },
-    medium: { color: '#ffc107', name: 'Средний' },
-    high: { color: '#e53935', name: 'Высокий' },
-    urgent: { color: '#d32f2f', name: 'Срочный' },
+    low:   { color: 'var(--priority-low)', name: 'Низкий' },
+    medium:{ color: 'var(--priority-medium)', name: 'Средний' },
+    high:  { color: 'var(--priority-high)', name: 'Высокий' },
+    urgent:{ color: 'var(--priority-urgent)', name: 'Срочный' },
 };
 
 // Рендер реализован ниже через универсальный ListItem

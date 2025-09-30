@@ -62,7 +62,7 @@ export const OnboardingScreen: React.FC = () => {
     <div className="auth-screen">
       <div className="card" ref={modalRef} style={{ maxWidth: 420, margin: '40px auto', padding: 16 }}>
         <h2 style={{ textAlign: 'center', marginBottom: 24 }}>Добро пожаловать!</h2>
-        <p style={{ textAlign: 'center', marginBottom: 24, color: '#666' }}>
+        <p style={{ textAlign: 'center', marginBottom: 24, color: 'var(--hint-color)' }}>
           Расскажите немного о себе, чтобы мы могли настроить ваш профиль
         </p>
         
@@ -108,7 +108,7 @@ export const OnboardingScreen: React.FC = () => {
           />
           
           {error && (
-            <div className="error-message" style={{ color: 'crimson', marginTop: 8 }}>
+            <div className="error-message" style={{ color: 'var(--danger-color)', marginTop: 8 }}>
               {error}
             </div>
           )}

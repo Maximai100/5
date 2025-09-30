@@ -165,3 +165,4 @@ COMMENT ON COLUMN public.estimate_items.price IS 'Цена за единицу';
 COMMENT ON COLUMN public.estimate_items.unit IS 'Единица измерения';
 COMMENT ON COLUMN public.estimate_items.image_url IS 'URL изображения позиции';
 COMMENT ON COLUMN public.estimate_items.type IS 'Тип позиции: material, labor, equipment, other';
+

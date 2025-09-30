@@ -9,8 +9,9 @@
 :root {
   /* Палитра (алиасы к базовым токенам темы) */
   --color-background: var(--bg-color);              /* Основной фон */
-  --color-surface-1: var(--secondary-bg-color);     /* Фон карточек и элементов */
-  --color-surface-2: var(--secondary-bg-color);     /* Фон вложенных элементов/чипов */
+  /* На светлой теме слегка дифференцируем поверхности для лучшей иерархии */
+  --color-surface-1: color-mix(in srgb, var(--secondary-bg-color) 85%, white 15%);
+  --color-surface-2: color-mix(in srgb, var(--secondary-bg-color) 70%, white 30%);
   --color-primary: var(--primary-color);            /* Акцентный цвет */
   --color-text-primary: var(--text-color);          /* Основной текст */
   --color-text-secondary: var(--hint-color);        /* Вторичный текст */
@@ -42,4 +43,35 @@
 
   /* Тени */
   --shadow-m: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Явное восстановление прежних значений для темной темы
+   (как было до правок), чтобы внешний вид не изменился */
+body.dark-theme {
+  --color-background: #000000;
+  --color-surface-1: #1C1C1E;
+  --color-surface-2: #2C2C2E;
+  --color-primary: #3390ec;
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #8D8D92;
+  --color-text-placeholder: #5C5C5E;
+  --color-success: #30D158;
+  --color-danger: #FF453A;
+  --color-separator: #38383A;
+  --shadow-m: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* И для инкапсулированных модулей (например, калькулятор) */
+.construction-calculator-module.dark-theme {
+  --color-background: #000000;
+  --color-surface-1: #1C1C1E;
+  --color-surface-2: #2C2C2E;
+  --color-primary: #3390ec;
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #8D8D92;
+  --color-text-placeholder: #5C5C5E;
+  --color-success: #30D158;
+  --color-danger: #FF453A;
+  --color-separator: #38383A;
+  --shadow-m: 0 4px 12px rgba(0, 0, 0, 0.2);
 }

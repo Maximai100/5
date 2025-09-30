@@ -159,8 +159,9 @@ export const AddToolModal: React.FC<AddToolModalProps> = ({ onClose, onSave, pro
                                         position: 'absolute',
                                         top: '4px',
                                         right: '4px',
-                                        background: 'rgba(255, 0, 0, 0.8)',
-                                        color: 'white',
+                                        background: 'var(--danger-color)',
+                                        color: 'var(--primary-text-color)',
+                                        opacity: 0.9,
                                         border: 'none',
                                         borderRadius: '50%',
                                         width: '24px',
@@ -218,14 +219,14 @@ export const AddToolModal: React.FC<AddToolModalProps> = ({ onClose, onSave, pro
                     alignItems: 'center',
                     padding: '16px 24px',
                     borderTop: '1px solid var(--border-color)',
-                    backgroundColor: 'var(--card-bg)'
+                    backgroundColor: 'var(--secondary-bg-color)'
                 }}>
                     <button 
                         onClick={handleSave} 
                         style={{ 
                             padding: '12px 32px',
-                            backgroundColor: '#007bff',
-                            color: 'white',
+                            backgroundColor: 'var(--primary-color)',
+                            color: 'var(--primary-text-color)',
                             border: 'none',
                             borderRadius: '8px',
                             cursor: 'pointer',
@@ -233,8 +234,6 @@ export const AddToolModal: React.FC<AddToolModalProps> = ({ onClose, onSave, pro
                             fontWeight: '500',
                             transition: 'background-color 0.2s'
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0056b3'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#007bff'}
                     >
                         Сохранить
                     </button>

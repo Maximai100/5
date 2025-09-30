@@ -142,11 +142,11 @@ export const PhotoViewerModal: React.FC<PhotoViewerModalProps> = ({ photo, onClo
 
                 {showContext && (
                     <div
-                        style={{ position: 'absolute', bottom: 20, right: 20, background: 'rgba(0,0,0,0.75)', color: '#fff', borderRadius: 8, padding: '8px 12px', display: 'flex', gap: 12 }}
+                        style={{ position: 'absolute', bottom: 20, right: 20, background: 'rgba(0,0,0,0.75)', color: 'var(--primary-text-color)', borderRadius: 8, padding: '8px 12px', display: 'flex', gap: 12 }}
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <button className="delete-photo-btn" onClick={() => onDelete(photo.id)} aria-label="Удалить фотоотчет" style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.35)', color: '#fff', borderRadius: 6, padding: '6px 10px' }}>Удалить</button>
-                        <button className="close-btn" onClick={() => setShowContext(false)} aria-label="Закрыть" style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.35)', color: '#fff', borderRadius: 6, padding: '6px 10px' }}>Закрыть</button>
+                        <button className="delete-photo-btn" onClick={() => onDelete(photo.id)} aria-label="Удалить фотоотчет" style={{ background: 'transparent', border: '1px solid color-mix(in srgb, var(--primary-text-color) 35%, transparent)', color: 'var(--primary-text-color)', borderRadius: 6, padding: '6px 10px' }}>Удалить</button>
+                        <button className="close-btn" onClick={() => setShowContext(false)} aria-label="Закрыть" style={{ background: 'transparent', border: '1px solid color-mix(in srgb, var(--primary-text-color) 35%, transparent)', color: 'var(--primary-text-color)', borderRadius: 6, padding: '6px 10px' }}>Закрыть</button>
                     </div>
                 )}
 

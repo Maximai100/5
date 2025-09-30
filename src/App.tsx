@@ -1651,7 +1651,7 @@ const App: React.FC = () => {
                 padding: '20px', 
                 textAlign: 'center', 
                 fontFamily: 'Arial, sans-serif',
-                backgroundColor: '#f5f5f5',
+                backgroundColor: 'var(--secondary-bg-color)',
                 minHeight: '100vh',
                 display: 'flex',
                 flexDirection: 'column',
@@ -1668,8 +1668,8 @@ const App: React.FC = () => {
                     }}
                     style={{
                         padding: '10px 20px',
-                        backgroundColor: '#007bff',
-                        color: 'white',
+                        backgroundColor: 'var(--primary-color)',
+                        color: 'var(--primary-text-color)',
                         border: 'none',
                         borderRadius: '5px',
                         cursor: 'pointer',
