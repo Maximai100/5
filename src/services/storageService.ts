@@ -362,7 +362,8 @@ export const dataService = {
     },
 
     getThemeMode(): 'light' | 'dark' {
-        return storageService.get(STORAGE_KEYS.THEME_MODE, 'light');
+        // По умолчанию — тёмная тема
+        return storageService.get(STORAGE_KEYS.THEME_MODE, 'dark');
     },
 
     setThemeMode(mode: 'light' | 'dark'): void {

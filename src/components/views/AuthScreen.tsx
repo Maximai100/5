@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
+import ForgotPasswordScreen from './ForgotPasswordScreen';
 
 const tabs = [
   { key: 'sign_in', label: 'Вход' },
@@ -12,6 +13,7 @@ export const AuthScreen: React.FC = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -45,6 +47,11 @@ export const AuthScreen: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Если показываем экран восстановления пароля
+  if (showForgotPassword) {
+    return <ForgotPasswordScreen onBack={() => setShowForgotPassword(false)} />;
+  }
 
   return (
     <div className="auth-screen">
@@ -80,6 +87,24 @@ export const AuthScreen: React.FC = () => {
             placeholder="••••••••"
             required
           />
+          {mode === 'sign_in' && (
+            <div style={{ textAlign: 'right', marginTop: 8 }}>
+              <button
+                type="button"
+                onClick={() => setShowForgotPassword(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--primary-color)',
+                  textDecoration: 'underline',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Забыли пароль?
+              </button>
+            </div>
+          )}
           {error && <div className="error-message" style={{ color: 'crimson', marginTop: 8 }}>{error}</div>}
           <button type="submit" className="btn btn-primary" disabled={loading} style={{ marginTop: 12 }}>
             {loading ? 'Подождите…' : mode === 'sign_up' ? 'Зарегистрироваться' : 'Войти'}

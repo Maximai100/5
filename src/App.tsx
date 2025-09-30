@@ -50,6 +50,7 @@ import { ListItem } from './components/ui/ListItem';
 import { useProjectContext, ProjectProvider } from './context/ProjectContext';
 const AuthScreen = React.lazy(() => import('./components/views/AuthScreen').then(m => ({ default: m.default })));
 const OnboardingScreen = React.lazy(() => import('./components/views/OnboardingScreen').then(m => ({ default: m.default })));
+const UpdatePasswordScreen = React.lazy(() => import('./components/views/UpdatePasswordScreen').then(m => ({ default: m.default })));
 import { supabase } from './supabaseClient';
 import type { Session } from '@supabase/supabase-js';
 
@@ -77,6 +78,7 @@ const App: React.FC = () => {
     // Supabase auth session
     const [session, setSession] = useState<Session | null>(null);
     const [needsOnboarding, setNeedsOnboarding] = useState(false);
+    const [showUpdatePassword, setShowUpdatePassword] = useState(false);
 
     // Error handler
     const handleError = (error: Error) => {
@@ -130,6 +132,13 @@ const App: React.FC = () => {
     // Логирование состояния после инициализации хуков (перемещено после объявления всех хуков)
 
     // Subscribe to Supabase auth changes - перемещен после объявления хуков
+
+    // Check for update-password route
+    useEffect(() => {
+        if (window.location.pathname === '/update-password') {
+            setShowUpdatePassword(true);
+        }
+    }, []);
 
     // Check for public share param in URL
     useEffect(() => {
@@ -1758,7 +1767,17 @@ const App: React.FC = () => {
         <ProjectProvider>
             <div className="app-container">
                 {/* Auth gate */}
-                {(!session) ? (
+                {showUpdatePassword ? (
+                    <main>
+                        <React.Suspense fallback={<Loader />}>
+                            <UpdatePasswordScreen onSuccess={() => {
+                                setShowUpdatePassword(false);
+                                // Очищаем URL
+                                window.history.replaceState({}, document.title, '/');
+                            }} />
+                        </React.Suspense>
+                    </main>
+                ) : (!session) ? (
                     <main>
                         <AuthScreen />
                     </main>

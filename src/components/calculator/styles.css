@@ -529,6 +529,14 @@
         display: flex !important;
         flex-direction: column !important;
     }
+    /* Сделаем шапку модалки более читаемой и закрепим её */
+    .construction-calculator-module .modal-header {
+        position: sticky !important;
+        top: 0 !important;
+        background-color: var(--card-bg-color) !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        z-index: 11 !important;
+    }
     
     .construction-calculator-module .modal-body {
         max-height: calc(85vh - 140px) !important;
@@ -550,12 +558,27 @@
         display: flex !important;
         justify-content: space-between !important;
         gap: 12px !important;
+        flex-wrap: wrap !important; /* Позволяет кнопкам переноситься при нехватке места */
+        padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important; /* Безопасная зона iOS */
     }
     
     .construction-calculator-module .modal-footer .btn {
-        flex: 1 !important;
+        flex: 1 1 auto !important;
         min-height: 44px !important;
         font-size: 16px !important;
+        width: auto !important;      /* Переопределяет глобальное width:100% */
+        min-width: 0 !important;     /* Разрешаем сжиматься, чтобы не вылазили за экран */
+    }
+
+    /* На очень узких экранах складываем кнопки в колонку */
+    @media (max-width: 420px) {
+        .construction-calculator-module .modal-footer {
+            flex-direction: column !important;
+        }
+        .construction-calculator-module .modal-footer .btn {
+            width: 100% !important;
+            flex: 0 0 auto !important;
+        }
     }
     
     /* Специальные стили для кнопки PDF */

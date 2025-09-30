@@ -59,8 +59,26 @@
     });
     </script>
 
-</head>
-<body>
+    <script>
+      // Устанавливаем тему как можно раньше: по умолчанию dark,
+      // а если есть сохранённый выбор — используем его
+      (function applyInitialTheme() {
+        try {
+          var saved = localStorage.getItem('themeMode');
+          var mode = 'dark';
+          if (saved) {
+            try { mode = JSON.parse(saved); } catch { mode = saved; }
+          }
+          if (mode === 'dark') {
+            document.addEventListener('DOMContentLoaded', function(){
+              document.body.classList.add('dark-theme');
+            });
+          }
+        } catch (e) { /* noop */ }
+      })();
+    </script>
+  </head>
+  <body>
     <div id="root"></div>
     <script>
       // Production ready code without debug logs
