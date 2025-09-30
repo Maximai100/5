@@ -1,16 +1,27 @@
+/*
+  Центральное место для токенов интерфейса.
+  Важно: здесь мы делаем токены семейства `--color-*` алиасами к
+  базовым токенам из `index.css` (`--bg-color`, `--secondary-bg-color`, и т.д.).
+  Это гарантирует, что и светлая, и темная темы меняются синхронно,
+  и компоненты, использующие `--color-*`, перестают «залипать» на темной палитре.
+*/
 
 :root {
-  /* Цветовая палитра (Темная тема) */
-  --color-background: #000000;       /* Основной фон */
-  --color-surface-1: #1C1C1E;        /* Фон карточек и элементов */
-  --color-surface-2: #2C2C2E;        /* Фон для вложенных элементов или при наведении */
-  --color-primary: #3390ec;          /* Основной акцентный цвет (синий) */
-  --color-text-primary: #FFFFFF;     /* Основной текст */
-  --color-text-secondary: #8E8E93;   /* Вторичный текст (серый) */
-  --color-text-placeholder: #5C5C5E; /* Текст плейсхолдеров */
-  --color-success: #30D158;          /* Зеленый для доходов */
-  --color-danger: #FF453A;           /* Красный для расходов и удаления */
-  --color-separator: #38383A;       /* Цвет разделителей */
+  /* Палитра (алиасы к базовым токенам темы) */
+  --color-background: var(--bg-color);              /* Основной фон */
+  --color-surface-1: var(--secondary-bg-color);     /* Фон карточек и элементов */
+  --color-surface-2: var(--secondary-bg-color);     /* Фон вложенных элементов/чипов */
+  --color-primary: var(--primary-color);            /* Акцентный цвет */
+  --color-text-primary: var(--text-color);          /* Основной текст */
+  --color-text-secondary: var(--hint-color);        /* Вторичный текст */
+  --color-text-placeholder: var(--hint-color);      /* Плейсхолдеры */
+  --color-success: var(--success-color);            /* Зеленый */
+  --color-danger: var(--danger-color);              /* Красный */
+  --color-separator: var(--border-color);           /* Разделители/границы */
+
+  /* Дополнительные алиасы для совместимости */
+  --text-color-secondary: var(--hint-color);
+  --input-bg: var(--bg-color);
 
   /* Типографика */
   --font-size-s: 14px;
@@ -30,5 +41,5 @@
   --border-radius-m: 12px;
 
   /* Тени */
-  --shadow-m: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --shadow-m: 0 4px 12px rgba(0, 0, 0, 0.08);
 }

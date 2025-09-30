@@ -11,8 +11,8 @@ interface CalculatorViewProps {
 }
 
 export const CalculatorView: React.FC<CalculatorViewProps> = ({ appState, companyProfile, projects }) => {
-  // "Прораб" использует темную тему по умолчанию
-  const currentTheme = 'dark';
+  // Используем текущую тему приложения, по умолчанию — светлая
+  const currentTheme: 'light' | 'dark' = appState?.themeMode ?? 'light';
 
   return (
     // 2. Оборачиваем компонент в div с классами для изоляции и темизации

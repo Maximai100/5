@@ -8,9 +8,9 @@
     --primary-color: #3390ec;
 --primary-text-color: #ffffff;
 --bg-color: #ffffff;
---secondary-bg-color: #f3f2f8;
---text-color: #000000;
---hint-color: #8E8E93;
+--secondary-bg-color: #f5f7fb;
+--text-color: #111827; /* мягче, чем чистый #000 */
+--hint-color: #6b7280; /* более спокойный серый */
 --link-color: #3390ec;
 --border-color: #e0e0e0;
 --danger-color: #e53935;
@@ -26,6 +26,9 @@
     /* Heights of fixed bars */
     --header-h: calc(64px + env(safe-area-inset-top, 0px));
     --nav-h: calc(60px + env(safe-area-inset-bottom, 0px));
+    /* Алиасы для совместимости со старыми стилями */
+    --text-color-secondary: var(--hint-color);
+    --input-bg: var(--bg-color);
 }
 
 body.dark-theme {
