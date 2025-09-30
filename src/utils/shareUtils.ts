@@ -1,5 +1,5 @@
 import { supabase } from '../supabaseClient';
-import { Project, FinanceEntry, WorkStage, PhotoReport } from '../types';
+import { Project, WorkStage, PhotoReport } from '../types';
 
 export interface ClientReportPayload {
   version: number;
@@ -18,6 +18,7 @@ export interface ClientReportPayload {
   };
   workStages: Array<{
     title: string;
+    startDate?: string;
     endDate?: string;
     status: string;
     progress: number;
@@ -57,10 +58,10 @@ export const buildClientReportPayload = (args: {
   expiresAt?: string | null;
 }): ClientReportPayload => {
   const { project, estimatesTotal, paidTotal, remainingToPay, workStages, photoReports, expiresAt } = args;
-  const completedStages = (workStages || [])
-    .filter((s) => s.status === 'completed')
-    .sort((a, b) => new Date(b.endDate || 0).getTime() - new Date(a.endDate || 0).getTime())
-    .map((s) => ({ title: s.title, endDate: s.endDate, status: s.status, progress: s.progress }));
+  const allStages = (workStages || [])
+    .slice()
+    .sort((a, b) => new Date(a.startDate || a.endDate || 0).getTime() - new Date(b.startDate || b.endDate || 0).getTime())
+    .map((s) => ({ title: s.title, startDate: s.startDate, endDate: s.endDate, status: s.status, progress: s.progress }));
 
   const photos = (photoReports || []).map((r) => ({
     id: r.id,
@@ -84,7 +85,7 @@ export const buildClientReportPayload = (args: {
       paidTotal,
       remainingToPay,
     },
-    workStages: completedStages,
+    workStages: allStages,
     photoReports: photos,
     expiresAt: expiresAt ?? null,
   };
@@ -177,4 +178,3 @@ export const buildShareUrl = (param: string): string => {
   url.searchParams.set('share', param);
   return url.toString();
 };
-

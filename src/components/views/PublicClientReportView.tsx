@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { ClientReportPayload } from '../../utils/shareUtils';
 import { IconCheckCircle, IconImage } from '../common/Icon';
 
@@ -13,13 +13,22 @@ const PublicClientReportView: React.FC<Props> = ({ payload }) => {
 
   const { project, financials } = payload;
 
+  // Force dark theme for public page
+  useEffect(() => {
+    document.body.classList.add('dark-theme');
+    return () => {
+      document.body.classList.remove('dark-theme');
+    };
+  }, []);
+
   return (
     <div className="public-client-report" style={{ paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}>
       <header className="projects-list-header" style={{ position: 'sticky', top: 0, zIndex: 10 }}>
         <h1 style={{ margin: '0 auto' }}>Отчет по проекту</h1>
       </header>
 
-      <main className="project-detail-main" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-m)' }}>
+      {/* Use .app-main as scroll container to bypass body overflow:hidden */}
+      <main className="app-main project-detail-main" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-m)' }}>
         <div className="card">
           <h2 style={{ marginBottom: 'var(--spacing-s)', color: 'var(--color-text-primary)', fontSize: 'var(--font-size-l)', textAlign: 'center' }}>
             {project.name}
@@ -77,7 +86,7 @@ const PublicClientReportView: React.FC<Props> = ({ payload }) => {
           <div className="card">
             <h3 style={{ marginBottom: 'var(--spacing-m)', color: 'var(--color-text-primary)' }}>
               <IconCheckCircle />
-              Выполненные работы
+              График работ
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-s)' }}>
               {payload.workStages.map((stage, idx) => (
@@ -86,7 +95,8 @@ const PublicClientReportView: React.FC<Props> = ({ payload }) => {
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 600 }}>{stage.title}</div>
                     <div style={{ color: 'var(--color-text-secondary)', fontSize: 12 }}>
-                      {stage.endDate ? `Завершено: ${new Date(stage.endDate).toLocaleDateString('ru-RU')}` : 'Завершено'}
+                      {stage.startDate ? `Начало: ${new Date(stage.startDate).toLocaleDateString('ru-RU')} • ` : ''}
+                      {stage.endDate ? `Завершение: ${new Date(stage.endDate).toLocaleDateString('ru-RU')}` : `Статус: ${statusRu(stage.status)}`}
                     </div>
                   </div>
                   {typeof stage.progress === 'number' && (
@@ -149,3 +159,11 @@ const formatCurrency = (value: number) => {
 
 export default PublicClientReportView;
 
+function statusRu(status?: string) {
+  switch (status) {
+    case 'planned': return 'Запланировано';
+    case 'in_progress': return 'В работе';
+    case 'completed': return 'Завершено';
+    default: return status || '';
+  }
+}

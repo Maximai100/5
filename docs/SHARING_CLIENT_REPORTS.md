@@ -63,6 +63,97 @@ where expires_at is null or expires_at > now();
 
 Примечание: в приложении при открытии `s.<token>` дополнительно проверяется поле `expires_at` и устаревшие ссылки не показываются.
 
+## Live-режим (ссылка всегда показывает актуальные данные)
+
+Чтобы заказчик видел свежие данные по ссылке без переотправки, добавьте SQL-функцию, которая формирует отчет «на лету» по токену. Приложение сначала вызывает RPC `get_client_report`, и только если он не настроен — падает назад на сохраненный payload.
+
+1) Функция-агрегатор (формирует JSON под фронтенд):
+
+```sql
+create or replace function public.get_client_report(p_token text)
+returns jsonb
+language sql
+security definer
+set search_path = public
+as $$
+with s as (
+  select * from public.client_report_shares where token = p_token limit 1
+)
+select jsonb_build_object(
+  'version', 1,
+  'generatedAt', now(),
+  'project', jsonb_build_object(
+    'id', p.id,
+    'name', p.name,
+    'client', coalesce(p.client, ''),
+    'address', coalesce(p.address, ''),
+    'status', p.status
+  ),
+  'financials', jsonb_build_object(
+    'estimatesTotal', coalesce((
+      select sum(ii.quantity * ii.price)
+      from estimates e
+      join estimate_items ii on ii.estimate_id = e.id
+      where e.project_id = s.project_id
+    ), 0),
+    'paidTotal', coalesce((
+      select sum(fe.amount)
+      from finance_entries fe
+      where fe.project_id = s.project_id and fe.type = 'income'
+    ), 0),
+    'remainingToPay', coalesce((
+      select sum(ii.quantity * ii.price)
+      from estimates e
+      join estimate_items ii on ii.estimate_id = e.id
+      where e.project_id = s.project_id
+    ), 0) - coalesce((
+      select sum(fe.amount)
+      from finance_entries fe
+      where fe.project_id = s.project_id and fe.type = 'income'
+    ), 0)
+  ),
+  'workStages', coalesce((
+    select jsonb_agg(jsonb_build_object(
+      'title', ws.title,
+      'startDate', ws.start_date,
+      'endDate', ws.end_date,
+      'status', ws.status,
+      'progress', ws.progress
+    ) order by ws.start_date nulls last, ws.end_date nulls last)
+    from work_stages ws where ws.project_id = s.project_id
+  ), '[]'::jsonb),
+  'photoReports', coalesce((
+    select jsonb_agg(jsonb_build_object(
+      'id', pr.id,
+      'title', pr.title,
+      'date', pr.date,
+      'photos', pr.photos
+    ) order by pr.date desc)
+    from photoreports pr where pr.project_id = s.project_id
+  ), '[]'::jsonb),
+  'expiresAt', s.expires_at
+)
+from s
+join projects p on p.id = s.project_id;
+$$;
+
+-- Разрешаем вызывать всем (в том числе anon)
+grant execute on function public.get_client_report(text) to anon;
+```
+
+Функция выполняется с правами владельца (security definer) и сама ограничивает доступ к проекту через `client_report_shares.token`, поэтому RLS можно не расширять на проектные таблицы.
+
+2) (Опционально) Упростите схему хранения `client_report_shares`: колонка `payload` не обязательна в live‑режиме. Можно хранить только `token`, `user_id`, `project_id`, `expires_at`. Приложение продолжит работать: при наличии функции будет запрашивать данные по токену, при её отсутствии — использовать сохраненный `payload`.
+
+## Поведение ссылки и мобильная прокрутка
+
+- Исправлена проблема отсутствия прокрутки при открытии ссылки из мессенджеров (WhatsApp/браузер): публичная страница рендерится внутри скролл‑контейнера `.app-main`, а `body` остаётся `overflow: hidden` для консистентного мобильного поведения.
+- Публичная страница открывается в тёмной теме.
+
+## UX при генерации ссылки
+
+- После генерации ссылка автоматически копируется в буфер обмена и пользователю показывается уведомление.
+
 ## Где в коде
 
 - Генерация и шаринг: `src/components/views/ClientReportScreen.tsx` (кнопка «Поделиться»).
@@ -79,4 +170,3 @@ where expires_at is null or expires_at > now();
 - Для серверного режима используйте политику выборки по `token` и при необходимости поле `expires_at`.
 - Фото в отчетах должны иметь публичные URL (Supabase Storage: публичные файлы). Это уже используется в приложении.
 - Старайтесь не включать в payload лишние данные (только то, что нужно клиенту).
-

@@ -74,10 +74,9 @@ export const ClientReportScreen: React.FC<ClientReportScreenProps> = ({
 
   const remainingToPay = totalEstimateAmount - totalPaidByClient;
 
-  // Получаем завершенные этапы работ
-  const completedWorkStages = projectWorkStages
-    .filter(stage => stage.status === 'completed')
-    .sort((a, b) => new Date(b.endDate || 0).getTime() - new Date(a.endDate || 0).getTime());
+  // Полный график работ
+  const sortedWorkStages = [...projectWorkStages]
+    .sort((a, b) => new Date(a.startDate || a.endDate || 0).getTime() - new Date(b.startDate || b.endDate || 0).getTime());
 
   const flatPhotos = useMemo(() => {
     const sorted = [...photoReports].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -200,23 +199,24 @@ export const ClientReportScreen: React.FC<ClientReportScreenProps> = ({
           </div>
         </div>
 
-        {/* Выполненные работы */}
+        {/* График работ */}
         <div className="card">
           <h3 style={{ marginBottom: 'var(--spacing-m)', color: 'var(--color-text-primary)' }}>
             <IconCheckCircle />
-            Выполненные работы
+            График работ
           </h3>
 
-          {completedWorkStages.length > 0 ? (
+          {sortedWorkStages.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-s)' }}>
-              {completedWorkStages.map((stage) => (
+              {sortedWorkStages.map((stage) => (
                 <ListItem
                   key={stage.id}
                   icon={<IconCheckCircle />}
                   title={stage.title}
-                  subtitle={stage.endDate ? 
-                    `Завершено: ${new Date(stage.endDate).toLocaleDateString('ru-RU')}` : 
-                    'Завершено'
+                  subtitle={
+                    `${stage.startDate ? `Начало: ${new Date(stage.startDate).toLocaleDateString('ru-RU')}` : ''}` +
+                    `${stage.startDate ? ' • ' : ''}` +
+                    `${stage.endDate ? `Завершение: ${new Date(stage.endDate).toLocaleDateString('ru-RU')}` : `Статус: ${statusRu(stage.status)}`}`
                   }
                   amountText={stage.progress ? `${stage.progress}%` : undefined}
                   amountColor="var(--color-success)"
@@ -225,7 +225,7 @@ export const ClientReportScreen: React.FC<ClientReportScreenProps> = ({
             </div>
           ) : (
             <p style={{ color: 'var(--color-text-secondary)', textAlign: 'center', padding: 'var(--spacing-l)' }}>
-              Завершенные этапы работ пока не добавлены
+              Этапы работ пока не добавлены
             </p>
           )}
         </div>
@@ -266,3 +266,12 @@ export const ClientReportScreen: React.FC<ClientReportScreenProps> = ({
     </>
   );
 };
+
+function statusRu(status?: string) {
+  switch (status) {
+    case 'planned': return 'Запланировано';
+    case 'in_progress': return 'В работе';
+    case 'completed': return 'Завершено';
+    default: return status || '';
+  }
+}

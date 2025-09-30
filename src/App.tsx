@@ -144,6 +144,24 @@ const App: React.FC = () => {
                     if (payload) setPublicSharePayload(payload);
                 } else if (shareParam.startsWith('s.')) {
                     const token = shareParam.slice(2);
+                    // Try RPC first for live data (if configured on Supabase)
+                    try {
+                        const { data: rpc1, error: rpc1err } = await supabase.rpc('get_client_report', { p_token: token });
+                        if (!rpc1err && rpc1) {
+                            setPublicSharePayload(rpc1 as any);
+                            return;
+                        }
+                        // Fallback alternative arg name
+                        const { data: rpc2, error: rpc2err } = await supabase.rpc('get_client_report', { token });
+                        if (!rpc2err && rpc2) {
+                            setPublicSharePayload(rpc2 as any);
+                            return;
+                        }
+                    } catch (rpcError) {
+                        console.warn('RPC get_client_report not available:', rpcError);
+                    }
+
+                    // Fallback to stored payload
                     const payload = await tryFetchServerShare(token);
                     if (payload) setPublicSharePayload(payload);
                 }
