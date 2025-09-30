@@ -21,39 +21,64 @@ export const generateUUID = () => {
  */
 export const copyToClipboard = async (text: string): Promise<boolean> => {
     try {
-        // Пробуем современный API
-        if (navigator.clipboard && window.isSecureContext) {
-            await navigator.clipboard.writeText(text);
-            
-            // Дополнительная проверка успешности копирования
-            try {
-                const clipboardText = await navigator.clipboard.readText();
-                if (clipboardText === text) {
-                    return true;
-                }
-            } catch (readError) {
-                // Если не можем прочитать буфер, считаем что копирование прошло успешно
-                console.log('Cannot read clipboard, but write was successful');
+        // 1) Современный API с запросом разрешений
+        const tryClipboardAPI = async () => {
+            // @ts-ignore – permissions может не поддерживаться
+            const permissions = navigator.permissions as any;
+            if (permissions && permissions.query) {
+                try {
+                    // @ts-ignore
+                    await permissions.query({ name: 'clipboard-write' });
+                } catch {}
             }
-            
-            // Если дошли сюда, считаем копирование успешным
-            return true;
-        }
-        
-        // Fallback для старых браузеров или небезопасного контекста
-        const textArea = document.createElement('textarea');
-        textArea.value = text;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(text);
+
+                // Доп. проверка
+                try {
+                    const clipboardText = await navigator.clipboard.readText();
+                    if (clipboardText === text) return true;
+                } catch {}
+                return true;
+            }
+            return false;
+        };
+
+        const apiOk = await tryClipboardAPI();
+        if (apiOk) return true;
+
+        // 2) Fallback для старых браузеров и iOS (execCommand)
+        const el = document.createElement('textarea');
+        el.value = text;
+        el.setAttribute('readonly', '');
+        el.style.position = 'fixed';
+        el.style.top = '-1000px';
+        el.style.left = '-1000px';
+        el.style.fontSize = '16px'; // iOS fix
+        document.body.appendChild(el);
+        el.focus();
+        el.select();
+        // Для iOS
+        el.setSelectionRange(0, el.value.length);
         const successful = document.execCommand('copy');
-        document.body.removeChild(textArea);
-        
-        return successful;
+        document.body.removeChild(el);
+        if (successful) return true;
+
+        // 3) Последняя попытка – selection в contentEditable
+        const helper = document.createElement('div');
+        helper.contentEditable = 'true';
+        helper.style.position = 'fixed';
+        helper.style.top = '-1000px';
+        helper.innerText = text;
+        document.body.appendChild(helper);
+        const range = document.createRange();
+        range.selectNodeContents(helper);
+        const sel = window.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+        const ok = document.execCommand('copy');
+        document.body.removeChild(helper);
+        return ok;
         
     } catch (err) {
         console.error('Failed to copy text: ', err);
@@ -71,14 +96,10 @@ export const safeCopyToClipboard = async (
     text: string, 
     onSuccess?: () => void, 
     onError?: () => void
-): Promise<void> => {
+): Promise<boolean> => {
     const success = await copyToClipboard(text);
-    
-    if (success) {
-        onSuccess?.();
-    } else {
-        onError?.();
-    }
+    if (success) onSuccess?.(); else onError?.();
+    return success;
 };
 
 /**

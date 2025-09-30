@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ClientReportPayload } from '../../utils/shareUtils';
 import { IconCheckCircle, IconImage } from '../common/Icon';
+import ImageViewerModal from '../modals/ImageViewerModal';
 
 interface Props {
   payload: ClientReportPayload;
@@ -20,6 +21,10 @@ const PublicClientReportView: React.FC<Props> = ({ payload }) => {
       document.body.classList.remove('dark-theme');
     };
   }, []);
+
+  const [viewer, setViewer] = useState<{ open: boolean; url: string; title: string }>(
+    { open: false, url: '', title: '' }
+  );
 
   return (
     <div className="public-client-report" style={{ paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}>
@@ -123,9 +128,18 @@ const PublicClientReportView: React.FC<Props> = ({ payload }) => {
                   </div>
                   <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(3, 1fr)' }}>
                     {rep.photos.map((p, i) => (
-                      <div key={i} style={{ width: '100%', aspectRatio: '1/1', overflow: 'hidden', borderRadius: 8, background: 'var(--color-surface-1)' }}>
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setViewer({ open: true, url: p.url, title: rep.title })}
+                        style={{
+                          width: '100%', aspectRatio: '1/1', overflow: 'hidden', borderRadius: 8,
+                          background: 'var(--color-surface-1)', padding: 0, border: 0, cursor: 'zoom-in'
+                        }}
+                        aria-label="Открыть фото"
+                      >
                         <img src={p.url} alt={p.caption || 'Фото'} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -144,6 +158,13 @@ const PublicClientReportView: React.FC<Props> = ({ payload }) => {
           </div>
         )}
       </main>
+
+      <ImageViewerModal
+        isOpen={viewer.open}
+        onClose={() => setViewer({ open: false, url: '', title: '' })}
+        imageUrl={viewer.url}
+        title={viewer.title || 'Фото'}
+      />
     </div>
   );
 };

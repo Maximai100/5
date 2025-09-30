@@ -5,6 +5,7 @@ import { IconTrendingUp, IconCheckCircle, IconImage, IconChevronRight } from '..
 import { financeCategoryToRu, safeShowAlert, safeCopyToClipboard } from '../../utils';
 import { buildClientReportPayload, buildShareUrl, encodePayloadToParam, tryCreateServerShare } from '../../utils/shareUtils';
 import { useFileStorage } from '../../hooks/useFileStorage';
+import ImageViewerModal from '../modals/ImageViewerModal';
 
 interface ClientReportScreenProps {
   project: Project;
@@ -26,6 +27,9 @@ export const ClientReportScreen: React.FC<ClientReportScreenProps> = ({
   const { getPhotoReports } = useFileStorage();
   const [photoReports, setPhotoReports] = useState<PhotoReport[]>([]);
   const [isSharing, setIsSharing] = useState(false);
+  const [viewer, setViewer] = useState<{ open: boolean; url: string; title: string }>(
+    { open: false, url: '', title: '' }
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -109,11 +113,24 @@ export const ClientReportScreen: React.FC<ClientReportScreenProps> = ({
       }
 
       const url = buildShareUrl(shareParam);
-      await safeCopyToClipboard(url, () => {
-        safeShowAlert('Ссылка на отчет скопирована в буфер обмена. Отправьте её заказчику.');
+      const copied = await safeCopyToClipboard(url, () => {
+        // ok
       }, () => {
-        safeShowAlert('Готово. Перешлите эту ссылку заказчику:\n' + url);
+        // fail
       });
+
+      if (copied) {
+        safeShowAlert('Ссылка скопирована в буфер обмена. Можно отправлять заказчику.');
+      } else if (navigator.share && typeof navigator.share === 'function') {
+        try {
+          await navigator.share({ title: 'Отчет по проекту', text: 'Ссылка на отчет для клиента', url });
+          safeShowAlert('Ссылка отправлена через системное меню.');
+        } catch {
+          safeShowAlert('Скопируйте ссылку вручную:\n' + url);
+        }
+      } else {
+        safeShowAlert('Скопируйте ссылку вручную:\n' + url);
+      }
     } catch (e) {
       console.error('Ошибка при создании ссылки отчета:', e);
       safeShowAlert('Не удалось создать ссылку на отчет. Попробуйте позже.');
@@ -245,9 +262,15 @@ export const ClientReportScreen: React.FC<ClientReportScreenProps> = ({
               marginBottom: 'var(--spacing-m)'
             }}>
               {flatPhotos.map((p, idx) => (
-                <div key={idx} style={{ width: '100%', aspectRatio: '1/1', overflow: 'hidden', borderRadius: 8, background: 'var(--color-surface-1)' }}>
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setViewer({ open: true, url: p.url, title: p.title || 'Фото' })}
+                  style={{ width: '100%', aspectRatio: '1/1', overflow: 'hidden', borderRadius: 8, background: 'var(--color-surface-1)', padding: 0, border: 0, cursor: 'zoom-in' }}
+                  aria-label="Открыть фото"
+                >
                   <img src={p.url} alt={p.caption || 'Фото'} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                </div>
+                </button>
               ))}
             </div>
           ) : (
@@ -263,6 +286,12 @@ export const ClientReportScreen: React.FC<ClientReportScreenProps> = ({
         </div>
 
       </main>
+      <ImageViewerModal
+        isOpen={viewer.open}
+        onClose={() => setViewer({ open: false, url: '', title: '' })}
+        imageUrl={viewer.url}
+        title={viewer.title}
+      />
     </>
   );
 };
